@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/* Cardboard Package brand
+   ink + bone as the base, one carton-orange accent for action, kraft only for material details. */
+@theme {
+  --color-ink: #0e1013;
+  --color-ink-2: #171a1f;
+  --color-ink-3: #22262c;
+  --color-bone: #f2efe9;
+  --color-paper: #fbfaf7;
+  --color-line: #dcd7cd;
+  --color-stone: #62666d;
+  --color-fog: #9a9da3;
+  --color-accent: #e35b2c;
+  --color-accent-deep: #c64a1e;
+  --color-kraft: #b4844f;
+  --font-display: var(--font-inter), "Segoe UI", Arial, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), "Segoe UI", Arial, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+  body { background: var(--color-bone); color: var(--color-ink); font-family: var(--font-sans); font-weight: 400; line-height: 1.5; font-stretch: normal; font-optical-sizing: auto; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  h1, h2, h3, h4, h5, h6 { font-family: var(--font-sans); font-weight: 600; letter-spacing: -0.02em; line-height: 1.3; }
+  h1 { line-height: 1.2; }
+  button, [role="tab"], nav a { font-weight: 500; }
+}
+::selection { background: var(--color-accent); color: #fff; }
+
+@layer components {
+  .wrap { width: 100%; max-width: 1360px; margin-inline: auto; padding-inline: 1.25rem; }
+  @media (min-width: 768px) { .wrap { padding-inline: 2.5rem; } }
+
+  /* Shared labels retain their scale and use the application typeface. */
+  .label-mono { font-family: var(--font-sans); font-size: .75rem; font-weight: 500; line-height: 1.5; letter-spacing: .04em; text-transform: uppercase; }
+  .font-display { font-weight: 600; letter-spacing: -0.02em; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; border-radius: 6px; padding: 0 1.25rem; height: 48px; font-weight: 500; font-size: .95rem; transition: background-color .2s, color .2s, border-color .2s; white-space: nowrap; }
+  .btn-accent { background: var(--color-accent); color: #fff; }
+  .btn-accent:hover { background: var(--color-accent-deep); }
+  .btn-ink { background: var(--color-ink); color: #fff; }
+  .btn-ink:hover { background: var(--color-ink-3); }
+  .btn-light { background: var(--color-bone); color: var(--color-ink); }
+  .btn-light:hover { background: #fff; }
+  .btn-line { border: 1px solid currentColor; }
+  .btn-line:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
+  .btn .arrow { transition: transform .2s; }
+  .btn:hover .arrow { transform: translateX(3px); }
+
+  .field { width: 100%; border-radius: 6px; border: 1px solid var(--color-line); background: #fff; padding: .7rem .9rem; min-height: 46px; font-size: .95rem; transition: border-color .15s, box-shadow .15s; }
+  .field:focus { border-color: var(--color-ink); outline: none; box-shadow: 0 0 0 3px rgba(227,91,44,.18); }
+  .field-label { display: block; font-size: .8rem; font-weight: 500; color: var(--color-ink); margin-bottom: .4rem; }
+
+  .rule { border-top: 1px solid var(--color-line); }
+  .rule-dark { border-top: 1px solid rgba(255,255,255,.12); }
+}
+
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+a, button, [role="tab"], summary, label[for] { cursor: pointer; }
+
+@keyframes marquee-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee-track { animation: marquee-x 50s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -40; } }
+.route { stroke-dasharray: 3 6; animation: dash 3s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

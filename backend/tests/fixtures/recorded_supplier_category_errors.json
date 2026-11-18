@@ -1,0 +1,10 @@
+{
+  "source_job_id": 10,
+  "source_usage_id": 9,
+  "raw_response_available": false,
+  "recorded_failures": [
+    {"path": "claims.0.category", "label": "Company Name", "expected": "identity"},
+    {"path": "claims.1.category", "label": "Country", "expected": "address"},
+    {"path": "claims.2.category", "label": "City", "expected": "address"}
+  ]
+}

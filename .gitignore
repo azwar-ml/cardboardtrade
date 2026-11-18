@@ -1,0 +1,71 @@
+@"
+
+# Environment and credentials
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Databases and local data
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# Dependencies and build outputs
+.venv/
+venv/
+node_modules/
+.next/
+.next*/
+.qa*/
+__pycache__/
+.pytest_cache/
+
+# Private reports and generated artifacts
+deliverables/
+*.log
+AUTOMATIC_DISCOVERY_RESULTS.json
+DUCKDUCKGO_DISCOVERY_RESULTS.txt
+QA_TEST_RESULTS.json
+"@ | Add-Content .gitignore
+# Private configuration
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Business data and databases
+frontend/data/
+*.db
+*.db-*
+*.sqlite*
+*.xlsx
+*.xls
+*.csv
+
+# Private reports and QA artifacts
+deliverables/
+*.log
+AUTOMATIC_DISCOVERY_RESULTS.json
+DUCKDUCKGO_DISCOVERY_RESULTS.txt
+QA_TEST_RESULTS.json
+
+# Dependencies and temporary builds
+.venv/
+venv/
+node_modules/
+.next*/
+.qa*/
+__pycache__/
+.pytest_cache/

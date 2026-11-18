@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { sourceFingerprint, checkBuild } from './console-build.mjs';
+const root=path.resolve('../.tmp/integration-fix/build-proof-'+randomUUID());
+fs.mkdirSync(path.join(root,'components'),{recursive:true});fs.mkdirSync(path.join(root,'.next'),{recursive:true});
+fs.writeFileSync(path.join(root,'components/Agent.tsx'),'implemented dashboard');
+fs.writeFileSync(path.join(root,'.next/BUILD_ID'),'test-build');
+assert.equal(checkBuild(root,'.next'),false);
+const proof=()=>fs.writeFileSync(path.join(root,'.next/console-build.json'),JSON.stringify({version:1,build_id:'test-build',source_fingerprint:sourceFingerprint(root)}));
+proof();assert.equal(checkBuild(root,'.next'),true);
+fs.writeFileSync(path.join(root,'components/Agent.tsx'),'updated dashboard');assert.equal(checkBuild(root,'.next'),false);
+proof();assert.equal(checkBuild(root,'.next'),true);
+fs.mkdirSync(path.join(root,'data'));fs.writeFileSync(path.join(root,'data/trade.db'),'private data is excluded from build proof');assert.equal(checkBuild(root,'.next'),true);
+fs.writeFileSync(path.join(root,'.next/BUILD_ID'),'different-build');assert.equal(checkBuild(root,'.next'),false);
+console.log('PASS build proof: missing proof, current source, source changes, database exclusion and replaced build detection');

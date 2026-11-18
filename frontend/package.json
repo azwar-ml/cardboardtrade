@@ -1,0 +1,43 @@
+{
+  "name": "cardboard-trade",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "node scripts/console-build.mjs",
+    "start": "next start",
+    "migrate": "python ../backend/migrate_sqlite.py data/trade.db",
+    "qa:browser": "node scripts/regression-browser.mjs",
+    "qa:discovery": "node scripts/discovery-browser.mjs",
+    "qa:discovery-integration": "node scripts/discovery-integration-browser.mjs",
+    "qa:automatic-discovery": "node scripts/automatic-discovery-browser.mjs",
+    "lint": "eslint",
+    "video": "node video/render.mjs",
+    "video:audio": "node video/audio.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "exceljs": "^3.4.0",
+    "lucide-react": "^0.468.0",
+    "motion": "^12.23.12",
+    "next": "^16.4.6",
+    "nodemailer": "^10.5.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^20",
+    "@types/nodemailer": "^6.4.17",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^15.5.29",
+    "playwright": "^1.49.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

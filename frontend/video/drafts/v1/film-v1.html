@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cardboard Package · Film</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=block" rel="stylesheet" />
+<style>
+  :root { --navy:#1a3263; --ink:#0e1a36; --green:#15807a; --mint:#4cc9bd; --kraft:#c49a6c; --line:#e5e9f0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #fff; }
+  body { font-family: Inter, sans-serif; color: var(--navy); -webkit-font-smoothing: antialiased; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #fff; }
+  .scene { position: absolute; inset: 0; visibility: hidden; }
+  .center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+  .h { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02; text-align: center; color: var(--navy); white-space: nowrap; }
+  .h em { font-style: normal; color: var(--green); }
+  .w { display: inline-block; will-change: transform, opacity, filter; }
+  .persp { position: absolute; inset: 0; perspective: 1500px; }
+
+  /* Kraft boxes, built from six faces */
+  .box { position: absolute; left: 0; top: 0; transform-style: preserve-3d; }
+  .f { position: absolute; left: 50%; top: 50%;        background-image: repeating-linear-gradient(90deg, rgba(0,0,0,.025) 0 2px, transparent 2px 7px), linear-gradient(160deg, rgba(255,255,255,.14), rgba(0,0,0,.08));
+       box-shadow: inset 0 0 0 1.5px rgba(110,70,30,.18); }
+  .f.top::after { content:""; position:absolute; left:50%; top:-1px; bottom:-1px; width:22%; transform:translateX(-50%); background:rgba(160,110,60,.35); }
+  .f.front::after { content:""; position:absolute; left:50%; top:0; height:18%; width:22%; transform:translateX(-50%); background:rgba(160,110,60,.35); }
+
+  /* Spreadsheet */
+  .sheet { position: absolute; width: 1500px; background: #fff; border-radius: 18px; box-shadow: 0 40px 100px -30px rgba(14,26,54,.35); overflow: hidden; border: 1px solid #dfe3ea; }
+  .sheet .bar { height: 54px; background: #1d6f42; color: #fff; display: flex; align-items: center; gap: 14px; padding: 0 22px; font-weight: 600; font-size: 20px; }
+  .sheet table { border-collapse: collapse; width: 100%; font-size: 21px; }
+  .sheet th { background: #e8f2ec; color: #1d6f42; text-align: left; padding: 10px 14px; border: 1px solid #d5dde3; font-weight: 700; }
+  .sheet td { padding: 9px 14px; border: 1px solid #e1e5ea; color: #2b3445; white-space: nowrap; }
+  .sheet td.r { background: #fde2e1; color: #a12622; font-weight: 600; }
+  .sheet td.y { background: #fff4cc; color: #7a5a00; font-weight: 600; }
+  .lens { position: absolute; width: 400px; height: 400px; border-radius: 50%; overflow: hidden; border: 20px solid #7fd3c9; box-shadow: 0 20px 50px rgba(14,26,54,.35), inset 0 0 40px rgba(255,255,255,.6); background: #fff; }
+  .lens .inner { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .handle { position: absolute; width: 70px; height: 260px; background: var(--navy); border-radius: 30px; transform-origin: 50% 0; }
+  .bubble { position: absolute; background: #fff; border-radius: 22px 22px 22px 6px; padding: 18px 26px; font-size: 28px; font-weight: 600; color: var(--ink); box-shadow: 0 18px 40px -12px rgba(14,26,54,.35); white-space: nowrap; }
+  .bubble small { display:block; font-size: 17px; font-weight: 500; color: #7a8394; margin-bottom: 4px; }
+
+  /* Logo */
+  .chip { position: absolute; border-radius: 50%; background: #fff; display: grid; place-items: center; }
+  .tile { position: absolute; border-radius: 22%; background: var(--navy); display: grid; place-items: center; box-shadow: 0 26px 0 #0f1f44, 0 50px 80px -20px rgba(14,26,54,.45); }
+  .tile .disc { width: 70%; height: 70%; border-radius: 50%; background: #fff; display: grid; place-items: center; }
+  .tile .disc img { width: 92%; }
+
+  /* Format icons */
+  .doc { position: absolute; width: 300px; height: 380px; border-radius: 22px; display: grid; place-items: center; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 92px; color: #fff; clip-path: polygon(0 0, 72% 0, 100% 22%, 100% 100%, 0 100%); }
+  .doc::after { content: ""; position: absolute; right: 0; top: 0; width: 28%; height: 22%; background: rgba(255,255,255,.35); clip-path: polygon(0 0, 100% 100%, 0 100%); }
+
+  /* Request document with detected tags */
+  .card { position: absolute; background: #fff; border-radius: 26px; border: 1px solid #e3e6ec; box-shadow: 0 40px 90px -30px rgba(14,26,54,.35); }
+  .ln { position: absolute; height: 26px; border-radius: 13px; background: #eef0f4; }
+  .tag { position: absolute; display: inline-flex; align-items: center; gap: 12px; background: var(--green); color: #fff; border-radius: 12px; padding: 12px 22px; font-size: 26px; font-weight: 600; box-shadow: 0 12px 26px -8px rgba(21,128,122,.6); white-space: nowrap; }
+  .tag i { width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+  .tag span { opacity: .7; font-weight: 500; }
+
+  /* Small data cards */
+  .mini { position: absolute; background: #fff; border-radius: 18px; border: 1px solid #e3e6ec; box-shadow: 0 24px 50px -20px rgba(14,26,54,.3); padding: 20px 24px; }
+  .mini .k { font-size: 18px; color: #7a8394; font-weight: 500; }
+  .mini .v { font-family: "Bricolage Grotesque"; font-size: 40px; font-weight: 700; color: var(--navy); margin-top: 4px; }
+
+  /* Offer cards */
+  .offer { position: absolute; width: 380px; background: #fff; border-radius: 20px; border: 1px solid #e3e6ec; box-shadow: 0 24px 50px -20px rgba(14,26,54,.3); padding: 22px 26px; }
+  .offer .t { font-size: 26px; font-weight: 600; color: var(--ink); }
+  .offer .p { font-size: 20px; color: #6b7487; margin-top: 6px; }
+  .offer .city { position: absolute; right: 20px; top: 20px; font-size: 16px; font-weight: 700; color: var(--green); background: #e5f4f2; padding: 6px 12px; border-radius: 999px; }
+  .offer svg { width: 40px; height: 40px; color: var(--kraft); margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+const T = 53;                         // film length in seconds
+const EASE = "cubic-bezier(.22,1,.36,1)";
+const IN = "cubic-bezier(.55,0,.75,.2)";
+const LIN = "linear";
+const stage = document.getElementById("stage");
+const LOGO = "/public/brand-logo.svg";
+
+// ---------- tiny timeline: every element gets keyframes on one absolute 0..T timeline ----------
+function K(el, keys) {
+  const frames = keys.map(([t, p, e]) => ({ ...p, offset: Math.min(1, Math.max(0, t / T)), easing: e || EASE }));
+  frames.sort((a, b) => a.offset - b.offset);
+  // Every property must appear in every keyframe, otherwise the browser interpolates it across the whole film.
+  const props = [...new Set(frames.flatMap((f) => Object.keys(f)))].filter((k) => k !== "offset" && k !== "easing");
+  for (const k of props) {
+    const first = frames.find((f) => k in f)[k];
+    let last = first;
+    for (const f of frames) { if (k in f) last = f[k]; else f[k] = last; }
+  }
+  if (frames[0].offset > 0) frames.unshift({ ...frames[0], offset: 0 });
+  if (frames[frames.length - 1].offset < 1) frames.push({ ...frames[frames.length - 1], offset: 1 });
+  el.animate(frames, { duration: T * 1000, fill: "both" });
+}
+function el(tag, cls, parent, html, style) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html != null) n.innerHTML = html;
+  if (style) Object.assign(n.style, style);
+  (parent || stage).appendChild(n);
+  return n;
+}
+function scene(a, b, bg) {
+  const s = el("div", "scene", stage, null, bg ? { background: bg } : null);
+  K(s, [[a - 0.001, { visibility: "hidden" }, LIN], [a, { visibility: "visible" }, LIN], [b, { visibility: "visible" }, LIN], [b + 0.001, { visibility: "hidden" }, LIN]]);
+  return s;
+}
+let seed = 7;
+const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// Headline with word-by-word reveal. html uses <em> for green words and <br> for breaks.
+function headline(parent, html, size, x, y, tin, tout, opts = {}) {
+  const box = el("div", "h", parent, null, { position: "absolute", left: x + "px", top: y + "px", transform: "translate(-50%,-50%)", fontSize: size + "px" });
+  let i = 0;
+  html.split(/(<br>)/).forEach((part) => {
+    if (part === "<br>") { el("br", null, box); return; }
+    part.replace(/<em>(.*?)<\/em>|([^<\s]+)/g, (m, em, plain) => {
+      (em ? em.split(" ") : [plain]).forEach((word) => {
+        if (!em && /^[?.!,…]/.test(word) && box.lastChild?.nodeType === 3) box.lastChild.remove();
+        const w = el("span", "w", box, em ? `<em>${word}</em>` : word);
+        box.appendChild(document.createTextNode(" "));
+        const t0 = tin + i * (opts.stagger ?? 0.09);
+        const hidden = { opacity: 0, transform: "translateY(60px) scale(.96)", filter: "blur(10px)" };
+        const shown = { opacity: 1, transform: "translateY(0) scale(1)", filter: "blur(0px)" };
+        const keys = [[t0, hidden], [t0 + 0.55, shown]];
+        if (tout != null) keys.push([tout, shown], [tout + 0.35, { opacity: 0, transform: "translateY(-50px) scale(.98)", filter: "blur(10px)" }, IN]);
+        K(w, keys);
+        i++;
+      });
+      return m;
+    });
+  });
+  return box;
+}
+
+// ---------- kraft box ----------
+const TONES = { front: "#c99d6b", back: "#bf9262", right: "#b3875a", left: "#ad8152", top: "#dcb886", bottom: "#a57a4b" };
+function kraftBox(parent, w, h, d) {
+  const b = el("div", "box", parent);
+  const face = (name, fw, fh, tf) => el("div", "f " + name, b, null, { width: fw + "px", height: fh + "px", transform: `translate(-50%,-50%) ${tf}`, backgroundColor: TONES[name] });
+  face("front", w, h, `translateZ(${d / 2}px)`);
+  face("back", w, h, `rotateY(180deg) translateZ(${d / 2}px)`);
+  face("right", d, h, `rotateY(90deg) translateZ(${w / 2}px)`);
+  face("left", d, h, `rotateY(-90deg) translateZ(${w / 2}px)`);
+  face("top", w, d, `rotateX(90deg) translateZ(${h / 2}px)`);
+  face("bottom", w, d, `rotateX(-90deg) translateZ(${h / 2}px)`);
+  return b;
+}
+// A drifting ring of boxes around the centre, like objects floating past camera.
+function boxField(parent, a, b, n, s) {
+  seed = s;
+  const P = el("div", "persp", parent);
+  for (let i = 0; i < n; i++) {
+    const ang = (i / n) * Math.PI * 2 + rnd() * 0.5;
+    const rx = 640 + rnd() * 300, ry = 360 + rnd() * 160;
+    const x = 960 + Math.cos(ang) * rx, y = 540 + Math.sin(ang) * ry;
+    const size = 90 + rnd() * 170;
+    const z = -200 + rnd() * 400;
+    const wrap = el("div", null, P, null, { position: "absolute", left: "0", top: "0", transformStyle: "preserve-3d" });
+    const bx = kraftBox(wrap, size, size * (0.55 + rnd() * 0.4), size * (0.6 + rnd() * 0.4));
+    const r0 = [rnd() * 360, rnd() * 360, rnd() * 60], spin = [40 + rnd() * 60, 60 + rnd() * 90];
+    const dx = Math.cos(ang) * 120, dy = Math.sin(ang) * 70 - 40;
+    K(wrap, [
+      [a, { transform: `translate3d(${x - dx}px,${y - dy + 80}px,${z - 300}px)`, opacity: 0 }, LIN],
+      [a + 0.6, { transform: `translate3d(${x - dx * 0.6}px,${y - dy * 0.6}px,${z - 120}px)`, opacity: 1 }, LIN],
+      [b, { transform: `translate3d(${x + dx}px,${y + dy}px,${z + 200}px)`, opacity: 1 }, LIN],
+    ]);
+    K(bx, [
+      [a, { transform: `rotateX(${r0[0]}deg) rotateY(${r0[1]}deg) rotateZ(${r0[2]}deg)` }, LIN],
+      [b, { transform: `rotateX(${r0[0] + spin[0]}deg) rotateY(${r0[1] + spin[1]}deg) rotateZ(${r0[2]}deg)` }, LIN],
+    ]);
+  }
+  return P;
+}
+const boxIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>`;
+
+async function build() {
+  const map = await (await fetch("/lib/worldDots.json")).json();
+
+  // ===== A · 0–2.6 · the problem =====
+  { const s = scene(0, 2.6);
+    boxField(s, 0, 2.6, 10, 11);
+    headline(s, "Sick of chasing<br><em>cardboard quotes</em>?", 124, 960, 540, 0.15, 2.25, { stagger: 0.12 }); }
+
+  // ===== B · 2.6–6.0 · messy spreadsheets and chats =====
+  { const s = scene(2.6, 6.0);
+    const rows = [
+      ["Al-Noor Packages", "TV Box 55″", "5", "150", "1.48", "21 days", "r:rate revised"],
+      ["Star Corrugation", "TV Box 55″", "5", "?", "1.39", "?", "y:call back"],
+      ["Mehran Board", "RSC Carton", "3", "125", "0.62", "14 days", ""],
+      ["Indus Box Co.", "TV Box 55″", "7", "175", "1.92", "30 days", "r:no sample"],
+      ["Punjab Cartons", "Fridge Box", "7", "175", "4.10", "?", "y:MOQ?"],
+      ["Crescent Pack", "TV Box 55″", "5", "150", "1.55", "18 days", ""],
+      ["Ravi Paper Mills", "Paper Bag", "—", "80", "0.09", "10 days", "r:price old"],
+      ["Sialkot Kraft", "TV Box 55″", "5", "140", "1.31", "?", "y:GSM?"],
+      ["Karachi Corrugated", "AC Outdoor", "7", "175", "3.85", "25 days", ""],
+      ["Lyari Box House", "TV Box 55″", "5", "150", "1.44", "20 days", "r:no reply"],
+      ["Hub Packaging", "Pizza 12″", "3", "125", "0.21", "7 days", ""],
+      ["Multan Board", "TV Box 55″", "5", "?", "1.36", "?", "y:awaiting"],
+    ];
+    const tableHTML = `<div class="bar">▦ Vendor_quotes_FINAL_v7 (2).xlsx</div><table><tr><th>Vendor</th><th>Box</th><th>Ply</th><th>GSM</th><th>USD / pc</th><th>Lead time</th><th>Notes</th></tr>` +
+      rows.map((r) => "<tr>" + r.map((c, i) => {
+        if (i === 6 && c) { const [k, v] = c.split(":"); return `<td class="${k}">${v}</td>`; }
+        return `<td class="${c === "?" ? "y" : ""}">${c}</td>`;
+      }).join("") + "</tr>").join("") + "</table>";
+    const SX = 210, SY = 150, Z = 1.75, R = 200;
+    const sheet = el("div", "sheet", s, tableHTML, { left: SX + "px", top: SY + "px" });
+    K(sheet, [[2.6, { transform: "translateY(500px) rotate(-4deg)", opacity: 0 }], [3.1, { transform: "translateY(0) rotate(-1.5deg)", opacity: 1 }], [6.0, { transform: "translateY(-30px) rotate(-1deg)", opacity: 1 }, LIN]]);
+    const bubbles = [["Rate revised +8% from Monday", "Vendor · Lahore", 1280, 120, 3.4], ["Which GSM did you want again?", "Vendor · Sialkot", 120, 760, 3.9], ["Sample couriered… last week?", "Vendor · Karachi", 1150, 840, 4.4], ["Sorry sir, capacity full this month", "Vendor · Multan", 90, 110, 4.9]];
+    bubbles.forEach(([txt, who, x, y, t]) => {
+      const b = el("div", "bubble", s, `<small>${who}</small>${txt}`, { left: x + "px", top: y + "px" });
+      K(b, [[t, { opacity: 0, transform: "scale(.6) translateY(30px)" }], [t + 0.35, { opacity: 1, transform: "scale(1) translateY(0)" }, "cubic-bezier(.34,1.56,.64,1)"], [5.8, { opacity: 1, transform: "scale(1) translateY(0)" }], [6.0, { opacity: 0, transform: "scale(.9) translateY(-10px)" }]]);
+    });
+    const lens = el("div", "lens", s);
+    const inner = el("div", "sheet inner", lens, tableHTML, { width: "1500px", position: "absolute", borderRadius: "0" });
+    const handle = el("div", "handle", s);
+    const path = [[2.9, 520, 420], [3.9, 1040, 360], [4.8, 1340, 640], [5.6, 760, 700], [6.0, 620, 560]];
+    K(lens, path.map(([t, x, y]) => [t, { transform: `translate(${x - R}px,${y - R}px)` }, "cubic-bezier(.45,0,.55,1)"]));
+    K(inner, path.map(([t, x, y]) => [t, { transform: `translate(${-(x - SX) * Z + R - 20}px,${-(y - SY) * Z + R - 20}px) scale(${Z})` }, "cubic-bezier(.45,0,.55,1)"]));
+    K(handle, path.map(([t, x, y]) => [t, { transform: `translate(${x + 120}px,${y + 150}px) rotate(-40deg)` }, "cubic-bezier(.45,0,.55,1)"]));
+    K(lens, [[2.6, { opacity: 0 }], [2.9, { opacity: 1 }], [5.85, { opacity: 1 }], [6.0, { opacity: 0 }]]);
+    K(handle, [[2.6, { opacity: 0 }], [2.9, { opacity: 1 }], [5.85, { opacity: 1 }], [6.0, { opacity: 0 }]]); }
+
+  // ===== C · 6.0–8.0 · "Meet" =====
+  { const s = scene(6.0, 8.0);
+    const word = el("div", "h", s, null, { position: "absolute", left: "960px", top: "540px", transform: "translate(-50%,-50%)", fontSize: "150px" });
+    seed = 3;
+    [..."Meet"].forEach((ch, i) => {
+      const L = el("span", "w", word, ch);
+      const sx = (i - 1.5) * 520 + (rnd() - 0.5) * 200, sy = (rnd() - 0.5) * 700, sc = 2.6 + rnd() * 1.4, rot = (rnd() - 0.5) * 60;
+      K(L, [[6.0, { transform: `translate(${sx}px,${sy}px) scale(${sc}) rotate(${rot}deg)`, opacity: 0, color: "#c2c8d4" }], [6.25, { opacity: 1 }], [7.0, { transform: "translate(0,0) scale(1) rotate(0deg)", opacity: 1, color: "#1a3263" }]]);
+    });
+    K(word, [[7.2, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], [7.85, { transform: "translate(-50%,-50%) scale(.35)", opacity: 0 }, IN]]); }
+
+  // ===== D/E · 8.0–13.0 · logo reveal → tile → "your export packaging partner" =====
+  { const s = scene(8.0, 13.0);
+    const chip = el("div", "chip", s, `<img src="${LOGO}" style="width:96%">`, { width: "220px", height: "220px", left: "850px", top: "430px" });
+    K(chip, [[8.0, { transform: "translateX(0) scale(0) rotate(-120deg)" }], [8.6, { transform: "translateX(0) scale(1) rotate(0deg)" }, "cubic-bezier(.34,1.4,.64,1)"],
+             [8.9, { transform: "translateX(0) scale(1) rotate(0deg)" }], [9.45, { transform: "translateX(-560px) scale(1) rotate(0deg)" }],
+             [10.2, { transform: "translateX(-560px) scale(1) rotate(0deg)" }], [10.6, { transform: "translateX(0) scale(.6) rotate(0deg)" }]]);
+    K(chip, [[10.55, { opacity: 1 }], [10.65, { opacity: 0 }]]);
+    const wm = el("div", "h", s, "Cardboard <em style='color:#15807a'>Package</em>", { position: "absolute", left: "550px", top: "540px", transform: "translateY(-50%)", fontSize: "126px", textAlign: "left" });
+    K(wm, [[9.35, { clipPath: "inset(0 100% 0 0)", opacity: 1 }], [9.95, { clipPath: "inset(0 0% 0 0)", opacity: 1 }], [10.15, { clipPath: "inset(0 0% 0 0)", opacity: 1 }], [10.45, { clipPath: "inset(0 0% 0 0)", opacity: 0 }]]);
+    const tile = el("div", "tile", s, `<div class="disc"><img src="${LOGO}"></div>`, { width: "260px", height: "260px", left: "830px", top: "300px" });
+    K(tile, [[10.5, { transform: "scale(.4) translateY(240px)", opacity: 0 }], [10.95, { transform: "scale(1) translateY(0)", opacity: 1 }, "cubic-bezier(.34,1.5,.64,1)"], [12.6, { transform: "scale(1) translateY(0)", opacity: 1 }], [12.95, { transform: "scale(.7) translateY(-60px)", opacity: 0 }, IN]]);
+    headline(s, "Your export<br><em>packaging partner</em>", 104, 960, 770, 11.1, 12.6); }
+
+  // ===== F · 13.0–15.8 · for buying and selling =====
+  { const s = scene(13.0, 15.8);
+    boxField(s, 13.0, 15.8, 9, 29);
+    headline(s, "For <em>buying</em><br>and <em>selling cardboard</em>", 124, 960, 540, 13.15, 15.4, { stagger: 0.14 }); }
+
+  // ===== G · 15.8–21.0 · send requests in any format =====
+  { const s = scene(15.8, 21.0);
+    headline(s, "Send us your <em>requests</em>", 104, 960, 200, 15.9, 17.4);
+    const tile = el("div", "tile", s, `<div class="disc"><img src="${LOGO}"></div>`, { width: "420px", height: "420px", left: "750px", top: "390px" });
+    K(tile, [[15.8, { transform: "translate(0,0) scale(.3)", opacity: 0 }], [16.3, { transform: "translate(0,0) scale(1)", opacity: 1 }, "cubic-bezier(.34,1.4,.64,1)"],
+             [17.4, { transform: "translate(0,0) scale(1)", opacity: 1 }], [17.95, { transform: "translate(-120px,-330px) scale(.34)", opacity: 1 }],
+             [20.6, { transform: "translate(-120px,-330px) scale(.34)", opacity: 1 }], [20.95, { transform: "translate(-120px,-330px) scale(.2)", opacity: 0 }]]);
+    const fmts = [["XLS", "#1d6f42"], ["PDF", "#d64532"], ["CSV", "#2f6fd6"], ["JPG", "#9f6e33"]];
+    fmts.forEach(([t, c], i) => {
+      const d = el("div", "doc", s, t, { left: "500px", top: "390px", background: c });
+      const a = 17.9 + i * 0.6;
+      K(d, [[a, { transform: "translateY(120px) scale(.5) rotate(-12deg)", opacity: 0 }], [a + 0.3, { transform: "translateY(0) scale(1) rotate(0deg)", opacity: 1 }, "cubic-bezier(.34,1.5,.64,1)"],
+            [a + 0.55, { transform: "translateY(0) scale(1) rotate(0deg)", opacity: 1 }], [a + 0.7, { transform: "translateY(-40px) scale(.9) rotate(6deg)", opacity: i === fmts.length - 1 ? 1 : 0 }]]);
+    });
+    // email envelope and chat bubble finish the cycle
+    const env = el("div", null, s, `<svg width="330" height="250" viewBox="0 0 330 250"><rect x="5" y="5" width="320" height="240" rx="26" fill="#1a3263"/><path d="M15 25 165 140 315 25" fill="none" stroke="#4cc9bd" stroke-width="16" stroke-linejoin="round"/><text x="165" y="215" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="800" font-size="46" fill="#fff">EMAIL</text></svg>`, { position: "absolute", left: "485px", top: "455px" });
+    K(env, [[20.3, { transform: "scale(.5) rotate(-10deg)", opacity: 0 }], [20.6, { transform: "scale(1) rotate(0deg)", opacity: 1 }, "cubic-bezier(.34,1.5,.64,1)"], [20.85, { opacity: 1, transform: "scale(1) rotate(0deg)" }], [21.0, { opacity: 0, transform: "scale(.9) rotate(0deg)" }]]);
+    headline(s, "in any<br><em>format</em>", 120, 1240, 580, 18.0, 20.7, { stagger: 0.12 }); }
+
+  // ===== H · 21.0–26.5 · we read every spec =====
+  { const s = scene(21.0, 26.5);
+    headline(s, "We <em>read</em> every spec", 120, 960, 540, 21.1, 22.45);
+    const cam = el("div", null, s, null, { position: "absolute", inset: "0" });
+    K(cam, [[22.6, { transform: "scale(1)" }, LIN], [26.5, { transform: "scale(1.1) translate(-20px,-10px)" }, LIN]]);
+    const card = el("div", "card", cam, `<div style="position:absolute;left:44px;top:34px;font-size:22px;font-weight:600;color:#7a8394">RFQ_Electronics_JebelAli.pdf</div>`, { left: "360px", top: "200px", width: "1200px", height: "700px" });
+    K(card, [[22.5, { transform: "translateY(700px) rotate(3deg)", opacity: 0 }], [23.1, { transform: "translateY(0) rotate(0deg)", opacity: 1 }], [26.2, { transform: "translateY(0) rotate(0deg)", opacity: 1 }], [26.5, { transform: "translateY(-60px) rotate(0deg)", opacity: 0 }]]);
+    [[100, 760], [170, 980], [240, 640], [310, 900], [380, 1040], [450, 720], [520, 860], [590, 540]].forEach(([y, w]) => el("div", "ln", card, null, { left: "44px", top: y + "px", width: w + "px" }));
+    const tags = [["TV Box", 90, 150, 23.4], ["5-ply · BC flute", 520, 220, 23.85], ["55″ · 1380 × 160 × 860 mm", 260, 292, 24.3], ["150 GSM brown kraft", 640, 362, 24.75], ["20,000 pcs", 160, 432, 25.2], ["CFR Jebel Ali", 560, 502, 25.6]];
+    tags.forEach(([t, x, y, a]) => {
+      const g = el("div", "tag", card, `<i></i>${t} <span>| detected</span>`, { left: x + "px", top: y + "px" });
+      K(g, [[a, { transform: "scale(.4)", opacity: 0 }], [a + 0.3, { transform: "scale(1)", opacity: 1 }, "cubic-bezier(.34,1.6,.64,1)"]]);
+    }); }
+
+  // ===== I · 26.5–30.0 · checks it =====
+  { const s = scene(26.5, 30.0);
+    headline(s, "<em>Checks</em> it", 140, 960, 540, 26.7, 29.65);
+    const spark = (pts, c) => `<svg width="230" height="80" viewBox="0 0 230 80"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+    const bars = `<svg width="230" height="90" viewBox="0 0 230 90">${[40, 62, 35, 75, 55, 88, 70, 50].map((h, i) => `<rect x="${i * 29}" y="${90 - h}" width="20" height="${h}" rx="4" fill="${i === 5 ? "#15807a" : "#c49a6c"}"/>`).join("")}</svg>`;
+    const donut = `<svg width="130" height="130" viewBox="0 0 42 42"><circle cx="21" cy="21" r="15.9" fill="none" stroke="#eef0f4" stroke-width="6"/><circle cx="21" cy="21" r="15.9" fill="none" stroke="#15807a" stroke-width="6" stroke-dasharray="72 28" stroke-dashoffset="25"/><circle cx="21" cy="21" r="15.9" fill="none" stroke="#c49a6c" stroke-width="6" stroke-dasharray="14 86" stroke-dashoffset="53"/></svg>`;
+    const minis = [
+      [`<div class="k">Kraft paper index · PK</div>${spark("0,60 30,52 60,58 90,40 120,44 150,30 180,34 230,14", "#15807a")}`, 170, 130],
+      [`<div class="k">Vendor capacity</div>${donut}`, 1430, 110],
+      [`<div class="k">Burst strength</div><div class="v">14 kg/cm²</div>`, 120, 470],
+      [`<div class="k">Flute</div><div class="v">BC · double wall</div>`, 1380, 480],
+      [`<div class="k">Freight · Karachi → Jebel Ali</div>${bars}`, 260, 760],
+      [`<div class="k">Lead time</div><div class="v">18 days</div>`, 1390, 800],
+    ];
+    minis.forEach(([h, x, y], i) => {
+      const m = el("div", "mini", s, h, { left: x + "px", top: y + "px" });
+      const a = 26.6 + i * 0.12, dx = (x < 960 ? -1 : 1) * 40, dy = (y < 540 ? -1 : 1) * 30;
+      K(m, [[a, { transform: `translate(${-dx * 4}px,${-dy * 4}px) scale(.6)`, opacity: 0, filter: "blur(10px)" }], [a + 0.6, { transform: "translate(0,0) scale(1)", opacity: 1, filter: "blur(0px)" }],
+            [29.6, { transform: `translate(${dx}px,${dy}px) scale(1)`, opacity: 1, filter: "blur(0px)" }, LIN], [30.0, { transform: `translate(${dx * 3}px,${dy * 3}px) scale(1.05)`, opacity: 0, filter: "blur(8px)" }]]);
+    }); }
+
+  // ===== J · 30.0–35.8 · best offer from verified vendors =====
+  { const s = scene(30.0, 31.85);
+    headline(s, "And finds the<br><em>best offer</em>", 130, 960, 540, 30.1, 31.5, { stagger: 0.12 }); }
+  { const s = scene(31.8, 34.05);
+    const cities = ["Karachi", "Lahore", "Faisalabad", "Sialkot", "Multan", "Gujranwala", "Hyderabad", "Islamabad", "Peshawar", "Karachi", "Lahore", "Sialkot", "Quetta", "Multan"];
+    seed = 41;
+    const P = el("div", "persp", s);
+    cities.forEach((c, i) => {
+      const col = i % 5, row = Math.floor(i / 5);
+      const x = 60 + col * 370 + (rnd() - 0.5) * 120, y = 70 + row * 330 + (rnd() - 0.5) * 100;
+      const z = -300 + rnd() * 380;
+      const price = (1.3 + rnd() * 0.4).toFixed(2);
+      const o = el("div", "offer", P, `${boxIcon}<div class="city">${c}</div><div class="t">TV Box · 5-ply</div><div class="p">$${price} / pc · FOB Karachi</div>`, { left: x + "px", top: y + "px" });
+      const a = 31.8 + rnd() * 0.6;
+      K(o, [[a, { transform: `translateZ(${z - 600}px)`, opacity: 0 }], [a + 0.5, { transform: `translateZ(${z}px)`, opacity: 1 }], [34.05, { transform: `translateZ(${z + 260}px)`, opacity: 1 }, LIN]]);
+    });
+    const glow = el("div", null, s, null, { position: "absolute", left: "360px", top: "330px", width: "1200px", height: "420px", borderRadius: "50%", background: "radial-gradient(closest-side, rgba(255,255,255,.97), rgba(255,255,255,.85) 60%, rgba(255,255,255,0))" });
+    K(glow, [[31.9, { opacity: 0 }], [32.3, { opacity: 1 }]]);
+    headline(s, "From <em>verified vendors</em><br>across Pakistan", 118, 960, 540, 32.0, null, { stagger: 0.1 }); }
+  { const s = scene(34.0, 35.85);
+    const disc = el("div", null, s, null, { position: "absolute", left: "560px", top: "140px", width: "800px", height: "800px", borderRadius: "50%", background: "#e5f4f2" });
+    K(disc, [[34.0, { transform: "scale(.6)", opacity: 0 }], [34.4, { transform: "scale(1)", opacity: 1 }]]);
+    const P = el("div", "persp", s);
+    const holder = el("div", null, P, null, { position: "absolute", left: "960px", top: "560px", transformStyle: "preserve-3d" });
+    const big = kraftBox(holder, 520, 360, 380);
+    K(big, [[34.0, { transform: "rotateX(-18deg) rotateY(-30deg)" }, LIN], [35.85, { transform: "rotateX(-18deg) rotateY(10deg)" }, LIN]]);
+    K(holder, [[34.0, { transform: "scale(.7)" }], [34.5, { transform: "scale(1)" }]]);
+    const o = el("div", "offer", s, `${boxIcon}<div class="city">Karachi</div><div class="t">TV Box · 5-ply</div><div class="p">$1.31 / pc · FOB Karachi</div>`, { left: "770px", top: "470px", width: "420px" });
+    K(o, [[34.2, { transform: "translateY(60px) scale(.7)", opacity: 0 }], [34.6, { transform: "translateY(0) scale(1.15)", opacity: 1 }, "cubic-bezier(.34,1.4,.64,1)"]]);
+    const chk = el("div", null, s, `<svg width="84" height="84" viewBox="0 0 84 84"><circle cx="42" cy="42" r="40" fill="#15807a" stroke="#fff" stroke-width="6"/><path d="M25 43 37 55 60 31" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>`, { position: "absolute", left: "1160px", top: "430px" });
+    K(chk, [[34.75, { transform: "scale(0) rotate(-90deg)" }], [35.1, { transform: "scale(1) rotate(0deg)" }, "cubic-bezier(.34,1.8,.64,1)"]]); }
+
+  // ===== K · 35.8–38.0 · and that's not all =====
+  { const s = scene(35.8, 38.0);
+    const box = el("div", "h", s, null, { position: "absolute", left: "960px", top: "540px", transform: "translate(-50%,-50%)", fontSize: "130px" });
+    seed = 77;
+    const lines = ["And", "that’s not all…"];
+    let k = 0;
+    lines.forEach((line, li) => {
+      if (li) el("br", null, box);
+      [...line].forEach((ch) => {
+        const L = el("span", "w", box, ch === " " ? "&nbsp;" : ch);
+        const a = 35.9 + k * 0.03;
+        const sx = (rnd() - 0.5) * 500, sy = (rnd() - 0.5) * 400, rot = (rnd() - 0.5) * 90;
+        K(L, [[a, { opacity: 0, transform: "translateY(50px)", filter: "blur(8px)" }], [a + 0.45, { opacity: 1, transform: "translateY(0)", filter: "blur(0px)" }],
+              [37.3, { opacity: 1, transform: "translateY(0)", filter: "blur(0px)" }], [37.95, { opacity: 0, transform: `translate(${sx}px,${sy}px) rotate(${rot}deg) scale(1.4)`, filter: "blur(4px)" }, IN]]);
+        k++;
+      });
+    }); }
+
+  // ===== L · 38.0–40.5 · we handle payments =====
+  { const s = scene(38.0, 40.5);
+    const hex = el("div", null, s, `<svg width="300" height="330" viewBox="0 0 300 330"><path d="M150 22 274 94v142L150 308 26 236V94z" fill="#0f6560" transform="translate(16 10)"/><path d="M150 12 268 80v150L150 298 32 230V80z" fill="#15807a"/><path d="M150 92 206 114v44c0 38-26 62-56 72-30-10-56-34-56-72v-44z" fill="none" stroke="#fff" stroke-width="14" stroke-linejoin="round"/><path d="M124 162l18 18 34-36" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></svg>`, { position: "absolute", left: "810px", top: "200px" });
+    K(hex, [[38.0, { transform: "translateY(-800px) rotate(-20deg)", opacity: 1 }], [38.55, { transform: "translateY(60px) rotate(0deg)" }, "cubic-bezier(.5,0,.75,0)"], [38.8, { transform: "translateY(0) rotate(0deg)" }, "cubic-bezier(.34,1.8,.64,1)"],
+             [40.2, { transform: "translateY(-20px) rotate(0deg)" }, LIN], [40.5, { transform: "translateY(-80px) rotate(0deg)", opacity: 0 }]]);
+    headline(s, "We handle<br><em>payments</em>", 120, 960, 760, 38.85, 40.2); }
+
+  // ===== M · 40.5–43.0 · and logistics =====
+  { const s = scene(40.5, 43.0);
+    headline(s, "and <em>logistics</em>", 124, 960, 220, 40.6, 42.65);
+    el("div", null, s, null, { position: "absolute", left: "0", right: "0", top: "862px", borderTop: "4px dashed #c9d0dc" });
+    const wheel = (x) => `<g transform="translate(${x} 330)"><g class="wh"><circle r="46" fill="#0e1a36"/><circle r="20" fill="#fff"/><rect x="-4" y="-44" width="8" height="30" fill="#4cc9bd"/></g></g>`;
+    const truck = el("div", null, s, `<svg width="1000" height="390" viewBox="0 0 1000 390">
+      <rect x="20" y="20" width="660" height="280" rx="18" fill="#c49a6c"/>
+      <g opacity=".22">${Array.from({ length: 30 }, (_, i) => `<rect x="${40 + i * 21}" y="20" width="6" height="280" fill="#6b4a25"/>`).join("")}</g>
+      <rect x="20" y="20" width="660" height="280" rx="18" fill="none" stroke="#9f6e33" stroke-width="6"/>
+      <circle cx="350" cy="160" r="70" fill="#fff"/><image href="${LOGO}" x="285" y="95" width="130" height="130"/>
+      <path d="M700 90h150l110 110v100H700z" fill="#1a3263"/><path d="M730 115h105l80 80H730z" fill="#bfe8e3"/>
+      <rect x="0" y="290" width="980" height="22" rx="8" fill="#0e1a36"/>
+      ${wheel(150)}${wheel(280)}${wheel(820)}</svg>`, { position: "absolute", left: "460px", top: "470px" });
+    K(truck, [[40.5, { transform: "translateX(-1600px)" }], [41.5, { transform: "translateX(0)" }, "cubic-bezier(.2,.8,.3,1)"], [42.3, { transform: "translateX(20px)" }, LIN], [43.0, { transform: "translateX(1700px)" }, IN]]);
+    truck.querySelectorAll(".wh").forEach((w) => K(w, [[40.5, { transform: "rotate(0deg)" }, "cubic-bezier(.2,.8,.3,1)"], [41.5, { transform: "rotate(1440deg)" }, LIN], [42.3, { transform: "rotate(1470deg)" }, IN], [43.0, { transform: "rotate(3000deg)" }]])); }
+
+  // ===== N · 43.0–46.0 · so you stay focused =====
+  { const s = scene(43.0, 46.0);
+    boxField(s, 43.0, 46.0, 9, 53);
+    const top = headline(s, "So you stay", 120, 960, 540, 43.1, null, { stagger: 0.14 });
+    K(top, [[43.9, { transform: "translate(-50%,-50%)", opacity: 1 }], [44.3, { transform: "translate(-50%,-180%)", opacity: 1 }], [45.3, { transform: "translate(-50%,-180%)", opacity: 1 }], [45.6, { transform: "translate(-50%,-260%)", opacity: 0 }]]);
+    const big = el("div", "h", s, "<em>focused.</em>", { position: "absolute", left: "960px", top: "600px", fontSize: "260px" });
+    K(big, [[44.05, { transform: "translate(-50%,-50%) scale(.5)", opacity: 0, filter: "blur(16px)" }], [44.55, { transform: "translate(-50%,-50%) scale(1)", opacity: 1, filter: "blur(0px)" }],
+            [45.2, { transform: "translate(-50%,-50%) scale(1.08)", opacity: 1, filter: "blur(0px)" }, LIN], [46.0, { transform: "translate(-50%,-50%) scale(7)", opacity: 0, filter: "blur(6px)" }, IN]]); }
+
+  // ===== O · 46.0–49.6 · network map =====
+  { const s = scene(46.0, 49.6);
+    const W = 1640, H = W * map.h / map.w, X0 = (1920 - W) / 2, Y0 = 70;
+    const sc = W / map.w;
+    const [kx, ky] = map.ports.karachi;
+    const ports = ["jebelAli", "dammam", "rotterdam", "felixstowe", "hamburg", "newYork", "houston", "toronto", "mombasa", "durban", "colombo", "portKlang", "sydney"];
+    const arc = ([x1, y1], [x2, y2]) => { const d = Math.hypot(x2 - x1, y2 - y1); return `M${x1},${y1} Q${(x1 + x2) / 2},${(y1 + y2) / 2 - d * 0.32} ${x2},${y2}`; };
+    const svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${map.w} ${map.h}">
+      ${map.dots.map(([x, y, pk]) => `<circle cx="${x}" cy="${y}" r="${pk ? 2.4 : 1.7}" fill="${pk ? "#15807a" : "#1a3263"}"/>`).join("")}
+      ${ports.map((p) => `<path class="rt" d="${arc([kx, ky], map.ports[p])}" fill="none" stroke="#15807a" stroke-width="2.2" stroke-linecap="round" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>`).join("")}
+      ${ports.map((p) => `<circle class="pt" cx="${map.ports[p][0]}" cy="${map.ports[p][1]}" r="4.5" fill="#15807a" stroke="#fff" stroke-width="1.5"/>`).join("")}
+    </svg>`;
+    const mapEl = el("div", null, s, svg, { position: "absolute", left: X0 + "px", top: Y0 + "px", width: W + "px", height: H + "px", transformOrigin: `${kx * sc}px ${ky * sc}px` });
+    const dx = 960 - (X0 + kx * sc), dy = 470 - (Y0 + ky * sc);
+    K(mapEl, [[46.0, { transform: `translate(${dx}px,${dy}px) scale(4.2)`, opacity: 0 }], [46.3, { transform: `translate(${dx}px,${dy}px) scale(4)`, opacity: 1 }], [47.7, { transform: "translate(0px,0px) scale(1)", opacity: 1 }, "cubic-bezier(.65,0,.35,1)"], [49.6, { transform: "translate(0px,0px) scale(.97)", opacity: 1 }, LIN]]);
+    mapEl.querySelectorAll(".rt").forEach((r, i) => K(r, [[47.2 + i * 0.07, { strokeDashoffset: 1 }], [48.1 + i * 0.07, { strokeDashoffset: 0 }]]));
+    mapEl.querySelectorAll(".pt").forEach((p, i) => K(p, [[47.9 + i * 0.07, { opacity: 0 }], [48.1 + i * 0.07, { opacity: 1 }]]));
+    const pin = el("div", null, mapEl, `<svg width="80" height="96" viewBox="0 0 80 96"><path d="M40 94 18 66H8a8 8 0 0 1-8-8V8a8 8 0 0 1 8-8h64a8 8 0 0 1 8 8v50a8 8 0 0 1-8 8H62z" fill="#1a3263"/><circle cx="40" cy="33" r="26" fill="#fff"/><image href="${LOGO}" x="16" y="9" width="48" height="48"/></svg>`, { position: "absolute", left: kx * sc - 40 + "px", top: ky * sc - 96 + "px", transformOrigin: "50% 100%" });
+    K(pin, [[46.2, { transform: "scale(0)" }], [46.6, { transform: "scale(.32)" }, "cubic-bezier(.34,1.8,.64,1)"], [47.7, { transform: "scale(1)" }, "cubic-bezier(.65,0,.35,1)"]]);
+    headline(s, "Join Pakistan’s <em>export packaging</em> network", 76, 960, 975, 47.7, null, { stagger: 0.08 }); }
+
+  // ===== P · 49.6–53.0 · end card =====
+  { const s = scene(49.6, 53.0);
+    const bg = el("div", null, s, null, { position: "absolute", inset: "0", background: "#0e1a36" });
+    K(bg, [[49.6, { clipPath: "circle(0% at 50% 50%)" }], [50.1, { clipPath: "circle(75% at 50% 50%)" }, "cubic-bezier(.65,0,.35,1)"]]);
+    const chip = el("div", "chip", s, `<img src="${LOGO}" style="width:96%">`, { width: "170px", height: "170px", left: "520px", top: "345px" });
+    K(chip, [[50.05, { transform: "scale(0) rotate(-120deg)" }], [50.5, { transform: "scale(1) rotate(0deg)" }, "cubic-bezier(.34,1.5,.64,1)"]]);
+    const wm = el("div", "h", s, "Cardboard Package", { position: "absolute", left: "730px", top: "430px", transform: "translateY(-50%)", fontSize: "120px", color: "#fff", textAlign: "left" });
+    K(wm, [[50.45, { clipPath: "inset(0 100% 0 0)" }], [51.0, { clipPath: "inset(0 0% 0 0)" }]]);
+    const tag = el("div", "h", s, "Buy and sell <span style='color:#c49a6c'>cardboard</span> effortlessly.", { position: "absolute", left: "960px", top: "650px", transform: "translateX(-50%)", fontSize: "60px", color: "#fff", fontWeight: 500 });
+    K(tag, [[51.0, { opacity: 0, transform: "translate(-50%,30px)" }], [51.5, { opacity: 1, transform: "translate(-50%,0)" }]]);
+    const url = el("div", null, s, "cardboardpackage.com", { position: "absolute", left: "960px", top: "760px", transform: "translateX(-50%)", fontSize: "34px", fontWeight: 600, color: "#4cc9bd", letterSpacing: ".04em" });
+    K(url, [[51.3, { opacity: 0 }], [51.8, { opacity: 1 }]]);
+    const black = el("div", null, s, null, { position: "absolute", inset: "0", background: "#000" });
+    K(black, [[52.5, { opacity: 0 }, LIN], [53.0, { opacity: 1 }]]); }
+}
+
+window.seek = (t) => { for (const a of document.getAnimations()) a.currentTime = Math.min(t, T - 0.001) * 1000; };
+window.__ready = (async () => {
+  await build();
+  await document.fonts.ready;
+  await Promise.all(["800 100px 'Bricolage Grotesque'", "700 100px 'Bricolage Grotesque'", "500 100px 'Bricolage Grotesque'", "600 20px Inter", "500 20px Inter"].map((f) => document.fonts.load(f)));
+  await Promise.all([...document.images].map((i) => i.complete || new Promise((r) => (i.onload = i.onerror = r))));
+  if (new URLSearchParams(location.search).has("render")) document.getAnimations().forEach((a) => a.pause());
+  return true;
+})();
+</script>
+</body>
+</html>

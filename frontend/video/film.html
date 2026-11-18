@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cardboard Package · Film v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=block" rel="stylesheet" />
+<style>
+  :root { --ink:#0e1013; --bone:#f4f1eb; --accent:#e35b2c; --kraft:#b4844f; --stone:#62666d; --line:#dcd7cd; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bone); }
+  body { font-family: Inter, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  #stage { position: absolute; inset: 0; overflow: hidden; background: var(--bone); }
+  #cam { position: absolute; inset: 0; }
+  .scene { position: absolute; inset: 0; visibility: hidden; }
+  .h { position: absolute; font-family: "Inter Tight", sans-serif; font-weight: 500; letter-spacing: -0.045em; line-height: 1.0; text-align: center; white-space: nowrap; color: var(--ink); }
+  .w, .l { display: inline-block; will-change: transform, opacity; }
+  .mono { font-family: "IBM Plex Mono", monospace; letter-spacing: .04em; text-transform: uppercase; }
+  .persp { position: absolute; inset: 0; perspective: 1500px; }
+
+  .box { position: absolute; left: 0; top: 0; transform-style: preserve-3d; }
+  .f { position: absolute; left: 50%; top: 50%;
+       background-image: repeating-linear-gradient(90deg, rgba(0,0,0,.03) 0 2px, transparent 2px 7px), linear-gradient(160deg, rgba(255,255,255,.12), rgba(0,0,0,.08));
+       box-shadow: inset 0 0 0 1.5px rgba(90,60,30,.2); }
+  .f.top::after { content:""; position:absolute; left:50%; top:-1px; bottom:-1px; width:22%; transform:translateX(-50%); background:rgba(140,95,50,.35); }
+  .f.front::after { content:""; position:absolute; left:50%; top:0; height:18%; width:22%; transform:translateX(-50%); background:rgba(140,95,50,.35); }
+
+  .sheet { position: absolute; width: 1500px; background: #fff; border-radius: 10px; box-shadow: 0 40px 100px -30px rgba(14,16,19,.35); overflow: hidden; border: 1px solid #ddd8ce; }
+  .sheet .bar { height: 54px; background: #1d6f42; color: #fff; display: flex; align-items: center; padding: 0 22px; font-weight: 600; font-size: 20px; }
+  .sheet table { border-collapse: collapse; width: 100%; font-size: 21px; }
+  .sheet th { background: #e8f2ec; color: #1d6f42; text-align: left; padding: 10px 14px; border: 1px solid #d5dde3; font-weight: 600; }
+  .sheet td { padding: 9px 14px; border: 1px solid #e3e6ea; color: #2b3038; white-space: nowrap; }
+  .sheet td.r { background: #fbe1d8; color: #a33a14; font-weight: 600; }
+  .sheet td.y { background: #fff1c7; color: #6e5300; font-weight: 600; }
+  .lens { position: absolute; width: 400px; height: 400px; border-radius: 50%; overflow: hidden; border: 16px solid var(--ink); box-shadow: 0 24px 60px rgba(14,16,19,.35), inset 0 0 40px rgba(255,255,255,.5); background: #fff; }
+  .lens .inner { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .handle { position: absolute; width: 56px; height: 240px; background: var(--ink); border-radius: 12px; }
+  .bubble { position: absolute; background: #fff; border-radius: 14px 14px 14px 4px; padding: 18px 26px; font-size: 28px; font-weight: 500; color: var(--ink); box-shadow: 0 18px 40px -14px rgba(14,16,19,.35); white-space: nowrap; border: 1px solid #e3ded4; }
+  .bubble small { display: block; font-family: "IBM Plex Mono"; font-size: 15px; text-transform: uppercase; letter-spacing: .05em; color: var(--stone); margin-bottom: 6px; }
+
+  .tile { position: absolute; border-radius: 22%; background: var(--ink); display: grid; place-items: center; box-shadow: 0 22px 0 #000, 0 50px 80px -20px rgba(14,16,19,.45); }
+  .doc { position: absolute; width: 300px; height: 380px; border-radius: 18px; display: grid; place-items: center; font-family: "Inter Tight"; font-weight: 600; letter-spacing: -.02em; font-size: 92px; color: #fff; clip-path: polygon(0 0, 72% 0, 100% 22%, 100% 100%, 0 100%); }
+  .doc::after { content: ""; position: absolute; right: 0; top: 0; width: 28%; height: 22%; background: rgba(255,255,255,.35); clip-path: polygon(0 0, 100% 100%, 0 100%); }
+
+  .card { position: absolute; background: #fff; border-radius: 16px; border: 1px solid #e3ded4; box-shadow: 0 40px 90px -30px rgba(14,16,19,.3); }
+  .ln { position: absolute; height: 24px; border-radius: 6px; background: #efebe4; }
+  .tag { position: absolute; display: inline-flex; align-items: center; gap: 14px; background: var(--ink); color: #fff; border-radius: 8px; padding: 12px 20px; font-size: 25px; font-weight: 500; white-space: nowrap; }
+  .tag i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .tag span { font-family: "IBM Plex Mono"; font-size: 17px; text-transform: uppercase; letter-spacing: .05em; color: #9a9da3; }
+
+  .mini { position: absolute; background: #fff; border-radius: 12px; border: 1px solid #e3ded4; box-shadow: 0 24px 50px -24px rgba(14,16,19,.3); padding: 20px 24px; }
+  .mini .k { font-family: "IBM Plex Mono"; font-size: 15px; text-transform: uppercase; letter-spacing: .05em; color: var(--stone); }
+  .mini .v { font-family: "Inter Tight"; font-size: 40px; font-weight: 500; letter-spacing: -.03em; color: var(--ink); margin-top: 6px; }
+
+  .offer { position: absolute; width: 380px; background: #fff; border-radius: 12px; border: 1px solid #e3ded4; box-shadow: 0 24px 50px -24px rgba(14,16,19,.3); padding: 22px 26px; }
+  .offer .t { font-size: 26px; font-weight: 500; color: var(--ink); }
+  .offer .p { font-family: "IBM Plex Mono"; font-size: 18px; color: var(--stone); margin-top: 8px; }
+  .offer .city { position: absolute; right: 20px; top: 22px; font-family: "IBM Plex Mono"; font-size: 14px; text-transform: uppercase; letter-spacing: .05em; color: var(--accent); }
+  .offer svg { width: 36px; height: 36px; color: var(--kraft); margin-bottom: 10px; }
+  .btnx { position: absolute; height: 120px; padding: 0 60px; border-radius: 14px; display: flex; align-items: center; gap: 22px; font-family: "Inter Tight"; font-size: 54px; font-weight: 500; letter-spacing: -.03em; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="cam"></div></div>
+<script>
+// Cardboard Package film v2 — 53 s at 120 BPM. Every cut and word lands on the beat grid (0.5 s).
+// Sound cues for these moments live in video/audio.mjs.
+const T = 53;
+const EASE = "cubic-bezier(.22,1,.36,1)";
+const SNAP = "cubic-bezier(.16,1,.3,1)";
+const BOUNCE = "cubic-bezier(.34,1.56,.64,1)";
+const IN = "cubic-bezier(.6,0,.8,.2)";
+const INOUT = "cubic-bezier(.65,0,.35,1)";
+const LIN = "linear";
+const cam = document.getElementById("cam");
+const ACC = "#E35B2C", INK = "#0E1013", BONE = "#F4F1EB";
+const markSVG = (body = INK, w = 64) => `<svg viewBox="0 0 64 64" width="${w}" height="${w}" style="overflow:visible"><path class="lid" d="M8 17 20 7h38L46 17z" fill="${ACC}"/><path class="body" d="M8 21h48v9H17v18h39v9H8z" fill="${body}"/></svg>`;
+
+// ---------- timeline helpers: one absolute 0..T timeline; every property is carried through every keyframe ----------
+function K(el, keys) {
+  const frames = keys.map(([t, p, e]) => ({ ...p, offset: Math.min(1, Math.max(0, t / T)), easing: e || EASE }));
+  frames.sort((a, b) => a.offset - b.offset);
+  const props = [...new Set(frames.flatMap((f) => Object.keys(f)))].filter((k) => k !== "offset" && k !== "easing");
+  for (const k of props) { let last = frames.find((f) => k in f)[k]; for (const f of frames) { if (k in f) last = f[k]; else f[k] = last; } }
+  if (frames[0].offset > 0) frames.unshift({ ...frames[0], offset: 0 });
+  if (frames[frames.length - 1].offset < 1) frames.push({ ...frames[frames.length - 1], offset: 1 });
+  el.animate(frames, { duration: T * 1000, fill: "both" });
+}
+function el(tag, cls, parent, html, style) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html != null) n.innerHTML = html;
+  if (style) Object.assign(n.style, style);
+  parent.appendChild(n);
+  return n;
+}
+function scene(a, b, bg) {
+  const s = el("div", "scene", cam, null, bg ? { background: bg } : null);
+  K(s, [[a - 0.001, { visibility: "hidden" }, LIN], [a, { visibility: "visible" }, LIN], [b, { visibility: "visible" }, LIN], [b + 0.001, { visibility: "hidden" }, LIN]]);
+  return s;
+}
+let seed = 7;
+const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+
+// Camera punch: a short scale kick and shake on impacts.
+const punches = [];
+function punch(t, amt = 1) { punches.push([t, amt]); }
+function buildCamera() {
+  const keys = [[0, { transform: "translate(0px,0px) scale(1)" }, LIN]];
+  punches.sort((a, b) => a[0] - b[0]).forEach(([t, a]) => {
+    keys.push([t - 0.001, { transform: "translate(0px,0px) scale(1)" }, LIN]);
+    keys.push([t + 0.03, { transform: `translate(${-10 * a}px,${7 * a}px) scale(${1 + 0.035 * a})` }, LIN]);
+    keys.push([t + 0.08, { transform: `translate(${8 * a}px,${-6 * a}px) scale(${1 + 0.02 * a})` }, LIN]);
+    keys.push([t + 0.14, { transform: `translate(${-4 * a}px,${3 * a}px) scale(${1 + 0.008 * a})` }, LIN]);
+    keys.push([t + 0.3, { transform: "translate(0px,0px) scale(1)" }, EASE]);
+  });
+  K(cam, keys);
+}
+
+/** Headline: words rise in (ghost → ink) at the given times; letters scatter out at `out`. <em> = accent. */
+function headline(parent, html, size, x, y, times, out, opts = {}) {
+  const final = opts.color || INK, ghost = opts.ghost || "#cfc9bf";
+  const box = el("div", "h", parent, null, { left: x + "px", top: y + "px", transform: "translate(-50%,-50%)", fontSize: size + "px", color: final });
+  let i = 0;
+  html.split(/(<br>)/).forEach((part) => {
+    if (part === "<br>") { el("br", null, box); return; }
+    part.replace(/<em>(.*?)<\/em>|([^<\s]+)/g, (m, em, plain) => {
+      (em ? em.split(" ") : [plain]).forEach((word) => {
+        const w = el("span", "w", box);
+        [...word].forEach((ch) => el("span", "l", w, ch));
+        box.appendChild(document.createTextNode(" "));
+        const t0 = Array.isArray(times) ? times[Math.min(i, times.length - 1)] : times + i * 0.12;
+        const c = em ? ACC : final;
+        K(w, [[t0, { opacity: 0, transform: "translateY(70px)", color: em ? ACC : ghost }], [t0 + 0.32, { opacity: 1, transform: "translateY(0px)" }, SNAP], [t0 + 0.55, { color: c }]]);
+        if (out != null) [...w.children].forEach((L) => {
+          const a = out + rnd() * 0.12, dx = (rnd() - 0.5) * 520, dy = (rnd() - 0.5) * 420, r = (rnd() - 0.5) * 140;
+          K(L, [[a, { transform: "translate(0px,0px) rotate(0deg) scale(1)", opacity: 1 }], [a + 0.3, { transform: `translate(${dx}px,${dy}px) rotate(${r}deg) scale(${0.4 + rnd()})`, opacity: 0 }, IN]]);
+        });
+        i++;
+      });
+      return m;
+    });
+  });
+  return box;
+}
+
+// ---------- kraft boxes ----------
+const TONES = { front: "#c39a6c", back: "#b98f62", right: "#ad835a", left: "#a77d52", top: "#d4b083", bottom: "#9e754b" };
+function kraftBox(parent, w, h, d) {
+  const b = el("div", "box", parent);
+  const face = (name, fw, fh, tf) => el("div", "f " + name, b, null, { width: fw + "px", height: fh + "px", transform: `translate(-50%,-50%) ${tf}`, backgroundColor: TONES[name] });
+  face("front", w, h, `translateZ(${d / 2}px)`);
+  face("back", w, h, `rotateY(180deg) translateZ(${d / 2}px)`);
+  face("right", d, h, `rotateY(90deg) translateZ(${w / 2}px)`);
+  face("left", d, h, `rotateY(-90deg) translateZ(${w / 2}px)`);
+  face("top", w, d, `rotateX(90deg) translateZ(${h / 2}px)`);
+  face("bottom", w, d, `rotateX(-90deg) translateZ(${h / 2}px)`);
+  return b;
+}
+function boxField(parent, a, b, n, s) {
+  seed = s;
+  const P = el("div", "persp", parent);
+  for (let i = 0; i < n; i++) {
+    const ang = (i / n) * Math.PI * 2 + rnd() * 0.5;
+    const rx = 660 + rnd() * 300, ry = 380 + rnd() * 160;
+    const x = 960 + Math.cos(ang) * rx, y = 540 + Math.sin(ang) * ry;
+    const size = 90 + rnd() * 170, z = -200 + rnd() * 400;
+    const wrap = el("div", null, P, null, { position: "absolute", left: "0", top: "0", transformStyle: "preserve-3d" });
+    const bx = kraftBox(wrap, size, size * (0.55 + rnd() * 0.4), size * (0.6 + rnd() * 0.4));
+    const r0 = [rnd() * 360, rnd() * 360, rnd() * 60], spin = [60 + rnd() * 80, 90 + rnd() * 120];
+    const dx = Math.cos(ang) * 160, dy = Math.sin(ang) * 90;
+    K(wrap, [
+      [a, { transform: `translate3d(${x - dx * 1.6}px,${y - dy * 1.6}px,${z - 500}px)`, opacity: 0 }, EASE],
+      [a + 0.45, { transform: `translate3d(${x - dx * 0.5}px,${y - dy * 0.5}px,${z - 100}px)`, opacity: 1 }, LIN],
+      [b, { transform: `translate3d(${x + dx}px,${y + dy}px,${z + 260}px)`, opacity: 1 }, LIN],
+    ]);
+    K(bx, [[a, { transform: `rotateX(${r0[0]}deg) rotateY(${r0[1]}deg) rotateZ(${r0[2]}deg)` }, LIN], [b, { transform: `rotateX(${r0[0] + spin[0]}deg) rotateY(${r0[1] + spin[1]}deg) rotateZ(${r0[2]}deg)` }, LIN]]);
+  }
+  return P;
+}
+// Whip pans (motion blur comes from the renderer's sub-frames).
+function whip(layer, tin, tout, from = 1, to = -1) {
+  const keys = [];
+  if (tin != null) keys.push([tin, { transform: `translateX(${from * 1920}px)` }], [tin + 0.28, { transform: "translateX(0px)" }, SNAP]);
+  if (tout != null) keys.push([tout, { transform: "translateX(0px)" }, IN], [tout + 0.25, { transform: `translateX(${to * 1920}px)` }]);
+  K(layer, keys);
+}
+const boxIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>`;
+function buildMark(holder, t0) {
+  const lid = holder.querySelector(".lid"), body = holder.querySelector(".body");
+  lid.style.transformBox = "fill-box"; lid.style.transformOrigin = "0% 100%";
+  K(body, [[t0, { clipPath: "inset(0 0 0 100%)" }], [t0 + 0.3, { clipPath: "inset(0 0 0 0%)" }, SNAP]]);
+  K(lid, [[t0, { transform: "translateY(-260px) rotate(-35deg)", opacity: 0 }], [t0 + 0.1, { opacity: 1 }], [t0 + 0.35, { transform: "translateY(0px) rotate(0deg)" }, IN], [t0 + 0.5, { transform: "translateY(-14px) rotate(-6deg)" }, EASE], [t0 + 0.65, { transform: "translateY(0px) rotate(0deg)" }, IN]]);
+}
+function wordmark(parent, x, y, size, color, tin, tout) {
+  const wm = el("div", "h", parent, null, { left: x + "px", top: y + "px", transform: "translateY(-50%)", fontSize: size + "px", textAlign: "left", fontWeight: 600, letterSpacing: "-0.05em", color, clipPath: "inset(-10% -5% -10% -5%)" });
+  [..."Cardboard Package"].forEach((ch, i) => {
+    const L = el("span", "l", wm, ch === " " ? "&nbsp;" : ch);
+    const a = tin + i * 0.022;
+    const keys = [[a, { transform: "translateY(110%)", opacity: 0 }], [a + 0.28, { transform: "translateY(0%)", opacity: 1 }, SNAP]];
+    if (tout != null) keys.push([tout + i * 0.008, { transform: "translateY(0%)", opacity: 1 }, IN], [tout + 0.2 + i * 0.008, { transform: "translateY(-110%)", opacity: 0 }]);
+    K(L, keys);
+  });
+  return wm;
+}
+
+function build(map) {
+  // ===== 1 · 0–3.0 · the problem =====
+  { const s = scene(0, 3.0);
+    boxField(s, 0, 3.0, 10, 11);
+    headline(s, "Sick of chasing<br><em>cardboard quotes?</em>", 132, 960, 540, [0.05, 0.3, 0.55, 1.0, 1.5], 2.62); }
+
+  // ===== 2 · 3.0–6.6 · messy sheets and chats, then sucked into the centre =====
+  { const s = scene(3.0, 6.6);
+    const layer = el("div", null, s, null, { position: "absolute", inset: "0" });
+    whip(layer, 3.0, null, 1);
+    const push = el("div", null, layer, null, { position: "absolute", inset: "0", transformOrigin: "960px 540px" });
+    K(push, [[3.0, { transform: "scale(1) rotate(0deg)", opacity: 1 }, LIN], [6.0, { transform: "scale(1.1) rotate(-1deg)", opacity: 1 }, IN], [6.55, { transform: "scale(.04) rotate(-30deg)", opacity: 0 }]]);
+    const rows = [
+      ["Al-Noor Packages", "TV Box 55″", "5", "150", "1.48", "21 days", "r:rate revised"], ["Star Corrugation", "TV Box 55″", "5", "?", "1.39", "?", "y:call back"],
+      ["Mehran Board", "RSC Carton", "3", "125", "0.62", "14 days", ""], ["Indus Box Co.", "TV Box 55″", "7", "175", "1.92", "30 days", "r:no sample"],
+      ["Punjab Cartons", "Fridge Box", "7", "175", "4.10", "?", "y:MOQ?"], ["Crescent Pack", "TV Box 55″", "5", "150", "1.55", "18 days", ""],
+      ["Ravi Paper Mills", "Paper Bag", "—", "80", "0.09", "10 days", "r:price old"], ["Sialkot Kraft", "TV Box 55″", "5", "140", "1.31", "?", "y:GSM?"],
+      ["Shalimar Corrugated", "AC Outdoor", "7", "175", "3.85", "25 days", ""], ["Lyari Box House", "TV Box 55″", "5", "150", "1.44", "20 days", "r:no reply"],
+      ["Hub Packaging", "Pizza 12″", "3", "125", "0.21", "7 days", ""], ["Multan Board", "TV Box 55″", "5", "?", "1.36", "?", "y:awaiting"],
+    ];
+    const tableHTML = `<div class="bar">Vendor_quotes_FINAL_v7 (2).xlsx</div><table><tr><th>Vendor</th><th>Box</th><th>Ply</th><th>GSM</th><th>USD / pc</th><th>Lead time</th><th>Notes</th></tr>` +
+      rows.map((r) => "<tr>" + r.map((c, i) => { if (i === 6 && c) { const [k, v] = c.split(":"); return `<td class="${k}">${v}</td>`; } return `<td class="${c === "?" ? "y" : ""}">${c}</td>`; }).join("") + "</tr>").join("") + "</table>";
+    const SX = 210, SY = 150, Z = 1.75, R = 200;
+    el("div", "sheet", push, tableHTML, { left: SX + "px", top: SY + "px", transform: "rotate(-1.5deg)" });
+    [["Rate revised +8% from Monday", "Vendor · Lahore", 1290, 110, 3.5], ["Which GSM did you want again?", "Vendor · Sialkot", 110, 770, 4.0], ["Sample couriered… last week?", "Vendor · Karachi", 1180, 850, 4.5], ["Sorry sir, capacity full this month", "Vendor · Multan", 80, 100, 5.0], ["Can you resend the drawing?", "Vendor · Faisalabad", 1260, 470, 5.5]].forEach(([txt, who, x, y, t]) => {
+      const b = el("div", "bubble", push, `<small>${who}</small>${txt}`, { left: x + "px", top: y + "px" });
+      K(b, [[t, { opacity: 0, transform: "scale(.5) translateY(40px)" }], [t + 0.22, { opacity: 1, transform: "scale(1) translateY(0px)" }, BOUNCE]]);
+    });
+    const lens = el("div", "lens", push);
+    const inner = el("div", "sheet inner", lens, tableHTML, { width: "1500px", position: "absolute", borderRadius: "0" });
+    const handle = el("div", "handle", push);
+    const path = [[3.2, 560, 420], [4.0, 1040, 360], [4.8, 1340, 640], [5.6, 760, 700], [6.2, 640, 520]];
+    const pe = "cubic-bezier(.45,0,.55,1)";
+    K(lens, path.map(([t, x, y]) => [t, { transform: `translate(${x - R}px,${y - R}px)` }, pe]));
+    K(inner, path.map(([t, x, y]) => [t, { transform: `translate(${-(x - SX) * Z + R - 16}px,${-(y - SY) * Z + R - 16}px) scale(${Z})` }, pe]));
+    K(handle, path.map(([t, x, y]) => [t, { transform: `translate(${x + 130}px,${y + 160}px) rotate(-40deg)` }, pe])); }
+
+  // ===== 3 · 6.0–8.0 · "Meet" slams in on the drop =====
+  { const s = scene(6.0, 8.0);
+    const word = el("div", "h", s, null, { left: "960px", top: "540px", transform: "translate(-50%,-50%)", fontSize: "170px" });
+    seed = 3;
+    [..."Meet"].forEach((ch, i) => {
+      const L = el("span", "l", word, ch);
+      const sx = (i - 1.5) * 620 + (rnd() - 0.5) * 220, sy = (rnd() - 0.5) * 900, sc = 3 + rnd() * 2, rot = (rnd() - 0.5) * 70;
+      K(L, [[6.1, { transform: `translate(${sx}px,${sy}px) scale(${sc}) rotate(${rot}deg)`, opacity: 0, color: "#cfc9bf" }], [6.3, { opacity: 1 }], [7.0, { transform: "translate(0px,0px) scale(1) rotate(0deg)", opacity: 1, color: INK }, IN]]);
+    });
+    K(word, [[7.0, { transform: "translate(-50%,-50%) scale(1.12)" }], [7.25, { transform: "translate(-50%,-50%) scale(1)" }, SNAP], [7.6, { transform: "translate(-50%,-50%) scale(1)" }, IN], [7.95, { transform: "translate(-50%,-50%) scale(0)" }]]);
+    const dot = el("div", null, s, null, { position: "absolute", left: "945px", top: "525px", width: "30px", height: "30px", borderRadius: "50%", background: ACC });
+    K(dot, [[7.8, { transform: "scale(0)" }], [8.0, { transform: "scale(1)" }, SNAP]]);
+    punch(7.0, 1.6); }
+
+  // ===== 4 · 8.0–10.0 · the mark builds, wordmark types in =====
+  { const s = scene(8.0, 10.0);
+    const holder = el("div", null, s, markSVG(INK, 300), { position: "absolute", left: "810px", top: "390px" });
+    buildMark(holder, 8.0);
+    K(holder, [[8.75, { transform: "translateX(0px) scale(1)" }], [9.05, { transform: "translateX(-560px) scale(.78)" }, SNAP], [9.75, { transform: "translateX(-560px) scale(.78)" }, IN], [10.0, { transform: "translateX(0px) scale(.6)" }]]);
+    wordmark(s, 560, 540, 126, INK, 9.0, 9.72);
+    punch(8.35, 0.8); }
+
+  // ===== 5 · 10.0–12.0 · tile + positioning, then the tile flies through camera =====
+  { const s = scene(10.0, 12.0);
+    const tile = el("div", "tile", s, markSVG(BONE, 150), { width: "250px", height: "250px", left: "835px", top: "290px" });
+    K(tile, [[10.0, { transform: "scale(.3)", opacity: 0 }], [10.25, { transform: "scale(1)", opacity: 1 }, BOUNCE], [11.7, { transform: "scale(1)", opacity: 1 }, IN], [12.0, { transform: "scale(7)", opacity: 0 }]]);
+    headline(s, "Your export<br><em>packaging partner</em>", 112, 960, 770, [10.5, 10.75, 11.0, 11.25], 11.68); }
+
+  // ===== 6 · 12.0–14.0 · buying and selling, whip out =====
+  { const s = scene(12.0, 14.0);
+    const layer = el("div", null, s, null, { position: "absolute", inset: "0" });
+    whip(layer, null, 13.75, 1, -1);
+    boxField(layer, 12.0, 14.0, 9, 29);
+    headline(layer, "For <em>buying</em><br>and <em>selling cardboard</em>", 132, 960, 540, [12.0, 12.25, 12.75, 13.0, 13.25]); }
+
+  // ===== 7 · 14.0–18.2 · requests in any format, absorbed into the tile =====
+  { const s = scene(14.0, 18.2);
+    const layer = el("div", null, s, null, { position: "absolute", inset: "0" });
+    whip(layer, 14.0, null, 1);
+    headline(layer, "Send us your <em>requests</em>", 104, 960, 190, [14.25, 14.4, 14.55, 14.75], 14.9);
+    const tile = el("div", "tile", layer, markSVG(BONE, 240), { width: "400px", height: "400px", left: "760px", top: "380px" });
+    K(tile, [[14.0, { transform: "translate(0px,0px) scale(.3)", opacity: 0 }], [14.3, { transform: "translate(0px,0px) scale(1)", opacity: 1 }, BOUNCE],
+             [14.9, { transform: "translate(0px,0px) scale(1)" }], [15.15, { transform: "translate(-160px,-320px) scale(.32)" }, SNAP],
+             [17.5, { transform: "translate(-160px,-320px) scale(.32)" }, INOUT], [17.9, { transform: "translate(0px,0px) scale(.55)" }, BOUNCE], [18.0, { transform: "translate(0px,0px) scale(.62)" }, IN], [18.2, { transform: "translate(0px,0px) scale(0)" }]]);
+    const ring = el("div", null, layer, null, { position: "absolute", left: "760px", top: "380px", width: "400px", height: "400px", borderRadius: "50%", border: `6px solid ${ACC}` });
+    K(ring, [[17.9, { transform: "scale(.4)", opacity: 0 }], [17.92, { opacity: 1 }], [18.2, { transform: "scale(1.3)", opacity: 0 }, EASE]]);
+    // one format per beat: XLS, PDF, EMAIL, CSV, JPG
+    const items = [
+      [15.0, `<div class="doc" style="position:relative;background:#1d6f42">XLS</div>`],
+      [15.5, `<div class="doc" style="position:relative;background:#c0392b">PDF</div>`],
+      [16.0, `<svg width="330" height="250" viewBox="0 0 330 250" style="margin-top:65px;margin-left:-15px"><rect x="5" y="5" width="320" height="240" rx="20" fill="${INK}"/><path d="M15 25 165 140 315 25" fill="none" stroke="${ACC}" stroke-width="14" stroke-linejoin="round"/><text x="165" y="215" text-anchor="middle" font-family="Inter Tight" font-weight="600" font-size="44" fill="#fff">EMAIL</text></svg>`],
+      [16.5, `<div class="doc" style="position:relative;background:#2c5aa0">CSV</div>`],
+      [17.0, `<div class="doc" style="position:relative;background:#9f6e33">JPG</div>`],
+    ];
+    items.forEach(([a, html], i) => {
+      const d = el("div", null, layer, html, { position: "absolute", left: "520px", top: "390px", width: "300px", height: "380px" });
+      const last = i === items.length - 1;
+      const keys = [[a, { transform: "translate(0px,700px) rotate(8deg) scale(1)", opacity: 1 }], [a + 0.2, { transform: "translate(0px,0px) rotate(0deg) scale(1)", opacity: 1 }, SNAP]];
+      if (!last) keys.push([a + 0.5, { transform: "translate(0px,0px) rotate(0deg) scale(1)" }, IN], [a + 0.68, { transform: "translate(0px,-800px) rotate(-6deg) scale(1)" }]);
+      else keys.push([17.5, { transform: "translate(0px,0px) rotate(0deg) scale(1)", opacity: 1 }, INOUT], [17.85, { transform: "translate(290px,-60px) rotate(0deg) scale(.05)", opacity: 0 }]);
+      K(d, keys);
+    });
+    const fmtText = headline(layer, "in any<br><em>format</em>", 124, 1260, 580, [15.5, 15.6, 15.75]);
+    K(fmtText, [[17.5, { transform: "translate(-50%,-50%) translate(0px,0px) scale(1)", opacity: 1 }, INOUT], [17.85, { transform: "translate(-50%,-50%) translate(-300px,0px) scale(.05)", opacity: 0 }]]); }
+
+  // ===== 8 · 18.0–22.0 · we read every spec, tags pop on the beat, zoom through =====
+  { const s = scene(18.0, 22.0);
+    const t1 = headline(s, "We <em>read</em> every spec", 124, 960, 540, [18.0, 18.25, 18.5, 18.75]);
+    K(t1, [[19.0, { transform: "translate(-50%,-50%) translateY(0px)", opacity: 1 }, IN], [19.3, { transform: "translate(-50%,-50%) translateY(-500px)", opacity: 0 }]]);
+    const camz = el("div", null, s, null, { position: "absolute", inset: "0", transformOrigin: "1000px 470px" });
+    K(camz, [[19.0, { transform: "scale(1)", opacity: 1 }, LIN], [21.7, { transform: "scale(1.12)", opacity: 1 }, IN], [22.0, { transform: "scale(3.2)", opacity: 0 }]]);
+    const card = el("div", "card", camz, `<div class="mono" style="position:absolute;left:44px;top:34px;font-size:18px;color:#62666d">RFQ · TV boxes Dubai.pdf</div>`, { left: "360px", top: "190px", width: "1200px", height: "700px" });
+    K(card, [[19.0, { transform: "translateY(900px) rotate(4deg)" }], [19.35, { transform: "translateY(0px) rotate(0deg)" }, SNAP]]);
+    [[100, 760], [170, 980], [240, 640], [310, 900], [380, 1040], [450, 720], [520, 860], [590, 540]].forEach(([y, w]) => el("div", "ln", card, null, { left: "44px", top: y + "px", width: w + "px" }));
+    [["TV Box", 90, 150, 19.5], ["5-ply · BC flute", 520, 220, 20.0], ["55″ · 1380 × 160 × 860 mm", 260, 292, 20.5], ["150 GSM brown kraft", 640, 362, 21.0], ["20,000 pcs", 160, 432, 21.25], ["CFR Jebel Ali", 560, 502, 21.5]].forEach(([t, x, y, a]) => {
+      const g = el("div", "tag", card, `<i></i>${t}<span>detected</span>`, { left: x + "px", top: y + "px" });
+      K(g, [[a, { transform: "scale(.3)", opacity: 0 }], [a + 0.18, { transform: "scale(1)", opacity: 1 }, BOUNCE]]);
+    }); }
+
+  // ===== 9 · 22.0–24.0 · checks it =====
+  { const s = scene(22.0, 24.0);
+    const hd = headline(s, "<em>Checks</em> it", 156, 960, 540, [22.0, 22.25], 23.62);
+    K(hd, [[22.0, { transform: "translate(-50%,-50%) scale(1.25)" }], [22.3, { transform: "translate(-50%,-50%) scale(1)" }, SNAP]]);
+    const spark = (pts) => `<svg width="230" height="80" viewBox="0 0 230 80"><polyline points="${pts}" fill="none" stroke="${ACC}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+    const bars = `<svg width="230" height="90" viewBox="0 0 230 90">${[40, 62, 35, 75, 55, 88, 70, 50].map((h, i) => `<rect x="${i * 29}" y="${90 - h}" width="20" height="${h}" rx="2" fill="${i === 5 ? ACC : "#b4844f"}"/>`).join("")}</svg>`;
+    const donut = `<svg width="130" height="130" viewBox="0 0 42 42"><circle cx="21" cy="21" r="15.9" fill="none" stroke="#efebe4" stroke-width="6"/><circle cx="21" cy="21" r="15.9" fill="none" stroke="${INK}" stroke-width="6" stroke-dasharray="72 28" stroke-dashoffset="25"/><circle cx="21" cy="21" r="15.9" fill="none" stroke="${ACC}" stroke-width="6" stroke-dasharray="14 86" stroke-dashoffset="53"/></svg>`;
+    [[`<div class="k">Kraft paper index · PK</div>${spark("0,60 30,52 60,58 90,40 120,44 150,30 180,34 230,14")}`, 170, 130],
+     [`<div class="k">Vendor capacity</div>${donut}`, 1430, 110], [`<div class="k">Burst strength</div><div class="v">14 kg/cm²</div>`, 120, 470],
+     [`<div class="k">Flute</div><div class="v">BC · double wall</div>`, 1380, 480], [`<div class="k">Freight · KHI → JEA</div>${bars}`, 260, 760],
+     [`<div class="k">Lead time</div><div class="v">18 days</div>`, 1390, 800]].forEach(([h, x, y], i) => {
+      const m = el("div", "mini", s, h, { left: x + "px", top: y + "px" });
+      const a = 22.0 + i * 0.125, dx = (x < 960 ? -1 : 1) * 40, dy = (y < 540 ? -1 : 1) * 30;
+      K(m, [[a, { transform: `translate(${-dx * 6}px,${-dy * 6}px) scale(.5)`, opacity: 0 }], [a + 0.25, { transform: "translate(0px,0px) scale(1)", opacity: 1 }, SNAP],
+            [23.6, { transform: `translate(${dx}px,${dy}px) scale(1)`, opacity: 1 }, IN], [23.95, { transform: `translate(${dx * 20}px,${dy * 20}px) scale(1.2)`, opacity: 1 }]]);
+    });
+    punch(22.0, 0.6); }
+
+  // ===== 10 · 24.0–26.3 · best offer =====
+  { const s = scene(24.0, 26.3);
+    headline(s, "And finds the<br><em>best offer</em>", 140, 960, 540, [24.0, 24.25, 24.5, 24.75, 25.0, 25.0]);
+    const bar = el("div", null, s, null, { position: "absolute", left: "700px", top: "640px", width: "520px", height: "10px", background: ACC, transformOrigin: "0 50%" });
+    K(bar, [[25.25, { transform: "scaleX(0)" }], [25.55, { transform: "scaleX(1)" }, SNAP]]); }
+
+  // ===== 11 · 25.75–28.05 · a flood of offers =====
+  { const s = scene(25.75, 28.05);
+    const cities = ["Lahore", "Karachi", "Faisalabad", "Sialkot", "Multan", "Gujranwala", "Hyderabad", "Islamabad", "Peshawar", "Lahore", "Kasur", "Sialkot", "Sheikhupura", "Multan", "Lahore"];
+    seed = 41;
+    cities.forEach((c, i) => {
+      const col = i % 5, row = Math.floor(i / 5);
+      const x = 40 + col * 375 + (rnd() - 0.5) * 80, y = 60 + row * 340 + (rnd() - 0.5) * 80;
+      const price = (1.3 + rnd() * 0.4).toFixed(2);
+      const o = el("div", "offer", s, `${boxIcon}<div class="city">${c}</div><div class="t">TV Box 55″ · 5-ply</div><div class="p">$${price} / pc · FOB KHI</div>`, { left: x + "px", top: y + "px" });
+      const a = 25.75 + col * 0.04 + row * 0.07;
+      const ang = Math.atan2(y - 480, x - 900);
+      K(o, [[a, { transform: "translate(0px,1200px) rotate(6deg)" }], [a + 0.35, { transform: "translate(0px,0px) rotate(0deg)" }, SNAP], [27.6, { transform: "translate(0px,0px) rotate(0deg)" }, IN], [27.95, { transform: `translate(${Math.cos(ang) * 1400}px,${Math.sin(ang) * 1100}px) rotate(${(rnd() - 0.5) * 40}deg)` }]]);
+    });
+    const glow = el("div", null, s, null, { position: "absolute", left: "310px", top: "300px", width: "1300px", height: "480px", borderRadius: "50%", background: "radial-gradient(closest-side, rgba(244,241,235,.98), rgba(244,241,235,.9) 60%, rgba(244,241,235,0))" });
+    K(glow, [[26.2, { opacity: 0 }], [26.45, { opacity: 1 }], [27.6, { opacity: 1 }], [27.9, { opacity: 0 }]]);
+    headline(s, "From <em>verified vendors</em><br>across Pakistan", 124, 960, 540, [26.25, 26.5, 26.5, 26.75, 27.0], 27.62); }
+
+  // ===== 12 · 28.0–30.0 · the chosen offer gets stamped, the TV carton opens and the TV slides out =====
+  { const s = scene(28.0, 30.0);
+    const disc = el("div", null, s, null, { position: "absolute", left: "640px", top: "120px", width: "840px", height: "840px", borderRadius: "50%", background: "#e9e4da" });
+    K(disc, [[28.0, { transform: "scale(.5)" }], [28.3, { transform: "scale(1)" }, SNAP]]);
+    const P = el("div", "persp", s, null, { perspective: "1800px", perspectiveOrigin: "1060px 500px" });
+    const holder = el("div", null, P, null, { position: "absolute", left: "1060px", top: "700px", transformStyle: "preserve-3d" });
+    K(holder, [[28.0, { transform: "translateY(500px) scale(.8)" }], [28.32, { transform: "translateY(0px) scale(1)" }, SNAP], [28.85, { transform: "translateY(0px) scale(1)" }, IN], [29.05, { transform: "translateY(26px) scale(1)" }, EASE], [30.0, { transform: "translateY(40px) scale(1)" }, LIN]]);
+    const box = el("div", "box", holder);
+    K(box, [[28.0, { transform: "rotateX(-10deg) rotateY(-34deg)" }, SNAP], [28.4, { transform: "rotateX(-10deg) rotateY(-24deg)" }, LIN], [30.0, { transform: "rotateX(-12deg) rotateY(-14deg)" }, LIN]]);
+    const W = 760, H = 440, D = 120, BR = "#5c3d1c";
+    const face = (tone, fw, fh, tf, html, extra = {}) => el("div", "f", box, html, { width: fw + "px", height: fh + "px", transform: `translate(-50%,-50%) ${tf}`, backgroundColor: tone, ...extra });
+    // front print: TV outline, reflection strokes, 55″ and the brand mark, like a real TV carton
+    const front = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="position:absolute;inset:0"><g fill="none" stroke="${BR}" stroke-opacity=".72" stroke-linecap="round">
+      <rect x="120" y="58" width="520" height="300" rx="10" stroke-width="7"/><rect x="138" y="76" width="484" height="264" rx="4" stroke-width="3"/>
+      <path d="M180 300 300 110M215 315 360 95" stroke-width="3"/><path d="M520 320 600 190" stroke-width="3"/>
+      <path d="M330 372h100M350 358l-12 14M410 358l12 14" stroke-width="5"/></g>
+      <text x="380" y="245" text-anchor="middle" font-family="Inter Tight" font-weight="600" font-size="104" letter-spacing="-4" fill="${BR}" fill-opacity=".78">55″</text>
+      <g transform="translate(676 384) scale(.62)" fill="${BR}" fill-opacity=".75"><path d="M8 17 20 7h38L46 17z"/><path d="M8 21h48v9H17v18h39v9H8z"/></g></svg>`;
+    const side = `<svg width="${D}" height="${H}" viewBox="0 0 ${D} ${H}" style="position:absolute;inset:0">
+      <rect x="47" y="46" width="26" height="64" rx="13" fill="#3a2814"/>
+      <g fill="none" stroke="${BR}" stroke-opacity=".7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M44 190v-34M36 166l8-10 8 10M76 190v-34M68 166l8-10 8 10"/>
+      <path d="M40 262a20 20 0 0 1 40 0zM60 262v20a5 5 0 0 1-10 0"/>
+      <path d="M48 312h24l-3 22a9 9 0 0 1-18 0zM60 343v18M51 361h18"/>
+      <rect x="20" y="146" width="80" height="232" rx="4" stroke-opacity=".35"/></g></svg>`;
+    face(TONES.front, W, H, `translateZ(${D / 2}px)`, front);
+    face(TONES.back, W, H, `rotateY(180deg) translateZ(${D / 2}px)`);
+    face(TONES.right, D, H, `rotateY(90deg) translateZ(${W / 2}px)`, side);
+    face(TONES.left, D, H, `rotateY(-90deg) translateZ(${W / 2}px)`);
+    face(TONES.bottom, W, D, `rotateX(-90deg) translateZ(${H / 2}px)`);
+    // inside of the open top: darker liner
+    face("#7d5834", W - 4, D - 4, `rotateX(90deg) translateZ(${H / 2 - 6}px)`, null, { boxShadow: "inset 0 0 40px rgba(0,0,0,.45)" });
+    // the TV sits inside the carton, between the front and back panels
+    const tv = el("div", null, box, `<div style="position:absolute;left:12px;top:12px;right:12px;bottom:12px;border-radius:4px;background:linear-gradient(135deg,#1c2026 0%,#0b0d10 55%,#15181d 100%);overflow:hidden">
+        <div class="glow" style="position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,#2a2f37,#0b0d10 70%);display:grid;place-items:center">${markSVG(BONE, 150)}</div>
+        <div style="position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.08) 42%,transparent 54%)"></div></div>`,
+      { position: "absolute", left: "50%", top: "50%", width: "700px", height: "400px", borderRadius: "8px", background: "#08090b", boxShadow: "0 30px 60px -20px rgba(0,0,0,.6)" });
+    K(tv, [[28.9, { transform: "translate(-50%,-50%) translateY(0px)" }, "cubic-bezier(.3,0,.2,1)"], [29.45, { transform: "translate(-50%,-50%) translateY(-450px)" }, BOUNCE], [30.0, { transform: "translate(-50%,-50%) translateY(-458px)" }, LIN]]);
+    const glow = tv.querySelector(".glow");
+    K(glow, [[29.35, { opacity: 0, filter: "brightness(1)" }], [29.45, { opacity: 1, filter: "brightness(1.8)" }, LIN], [29.7, { opacity: 1, filter: "brightness(1)" }]]);
+    // top flaps pop open just before the TV comes out
+    const flap = (z, closed, open, tone) => {
+      const f = el("div", "f", box, null, { width: W + "px", height: D / 2 + "px", backgroundColor: tone, transformOrigin: "50% 100%" });
+      K(f, [[28.7, { transform: `translate(-50%,-100%) translateY(${-H / 2}px) translateZ(${z}px) rotateX(${closed}deg)` }], [28.9, { transform: `translate(-50%,-100%) translateY(${-H / 2}px) translateZ(${z}px) rotateX(${open}deg)` }, BOUNCE]]);
+    };
+    flap(D / 2, 90, -38, TONES.top);
+    flap(-D / 2, -90, 38, "#c9a577");
+    // the winning offer + stamp
+    const o = el("div", "offer", s, `${boxIcon}<div class="city">Lahore</div><div class="t">TV Box 55″ · 5-ply</div><div class="p">$1.31 / pc · FOB KHI</div>`, { left: "150px", top: "560px", width: "440px" });
+    K(o, [[28.1, { transform: "translateX(-500px) scale(.9)", opacity: 0 }], [28.35, { transform: "translateX(0px) scale(1.12)", opacity: 1 }, SNAP]]);
+    const stamp = el("div", null, s, `<svg width="96" height="96" viewBox="0 0 96 96"><circle cx="48" cy="48" r="44" fill="${ACC}" stroke="#fff" stroke-width="6"/><path d="M29 49 42 62 68 35" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>`, { position: "absolute", left: "560px", top: "628px" });
+    K(stamp, [[28.4, { transform: "scale(3) rotate(-30deg)", opacity: 0 }], [28.5, { transform: "scale(1) rotate(0deg)", opacity: 1 }, IN], [28.62, { transform: "scale(1.12) rotate(0deg)" }, EASE], [28.75, { transform: "scale(1) rotate(0deg)" }, EASE]]);
+    punch(28.5, 1); punch(29.45, 0.5); }
+
+  // ===== 13 · 30.0–32.0 · and that's not all =====
+  { const s = scene(30.0, 32.0);
+    headline(s, "And<br>that’s not all…", 140, 960, 540, [30.0, 30.5, 30.75, 31.0], 31.6); }
+
+  // ===== 14 · 32.0–34.0 · payments: the shield drops =====
+  { const s = scene(32.0, 34.0);
+    const hex = el("div", null, s, `<svg width="300" height="330" viewBox="0 0 300 330"><path d="M150 22 274 94v142L150 308 26 236V94z" fill="#b5441c" transform="translate(14 10)"/><path d="M150 12 268 80v150L150 298 32 230V80z" fill="${ACC}"/><path d="M150 92 206 114v44c0 38-26 62-56 72-30-10-56-34-56-72v-44z" fill="none" stroke="#fff" stroke-width="13" stroke-linejoin="round"/><path d="M124 162l18 18 34-36" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg>`, { position: "absolute", left: "810px", top: "190px" });
+    K(hex, [[32.0, { transform: "translateY(-900px) rotate(-25deg) scale(1,1)" }], [32.25, { transform: "translateY(40px) rotate(0deg) scale(1,.92)" }, IN], [32.42, { transform: "translateY(0px) rotate(0deg) scale(1,1)" }, BOUNCE],
+             [33.7, { transform: "translateY(-10px) rotate(0deg) scale(1,1)" }, IN], [34.0, { transform: "translateY(-900px) rotate(20deg) scale(1,1)" }]]);
+    headline(s, "We handle<br><em>payments</em>", 124, 960, 770, [32.5, 32.75, 33.0], 33.62);
+    punch(32.25, 1.2); }
+
+  // ===== 15 · 34.0–36.0 · logistics: truck with speed lines =====
+  { const s = scene(34.0, 36.0);
+    headline(s, "and <em>logistics</em>", 128, 960, 210, [34.25, 34.5], 35.62);
+    el("div", null, s, null, { position: "absolute", left: "0", right: "0", top: "862px", borderTop: "4px dashed #cfc9bf" });
+    seed = 9;
+    for (let i = 0; i < 12; i++) {
+      const y = 480 + rnd() * 340, w = 120 + rnd() * 260, a = 34.0 + rnd() * 1.6;
+      const sl = el("div", null, s, null, { position: "absolute", left: "0", top: y + "px", width: w + "px", height: "4px", borderRadius: "2px", background: "#cfc9bf" });
+      K(sl, [[a, { transform: "translateX(2100px)", opacity: 0 }, LIN], [a + 0.01, { opacity: 1 }, LIN], [a + 0.35, { transform: `translateX(${-w - 40}px)`, opacity: 1 }, LIN]]);
+    }
+    const wheel = (x) => `<g transform="translate(${x} 330)"><g class="wh"><circle r="46" fill="${INK}"/><circle r="20" fill="#e9e4da"/><rect x="-4" y="-44" width="8" height="28" fill="${ACC}"/></g></g>`;
+    const truck = el("div", null, s, `<svg width="1000" height="390" viewBox="0 0 1000 390">
+      <rect x="20" y="20" width="660" height="280" rx="10" fill="#c39a6c"/>
+      <g opacity=".2">${Array.from({ length: 30 }, (_, i) => `<rect x="${40 + i * 21}" y="20" width="6" height="280" fill="#5c3d1c"/>`).join("")}</g>
+      <rect x="20" y="20" width="660" height="280" rx="10" fill="none" stroke="#8c5f32" stroke-width="5"/>
+      <g transform="translate(280 90) scale(2.2)"><path d="M8 17 20 7h38L46 17z" fill="${ACC}"/><path d="M8 21h48v9H17v18h39v9H8z" fill="${INK}"/></g>
+      <path d="M700 90h150l110 110v100H700z" fill="${INK}"/><path d="M730 115h105l80 80H730z" fill="#d9d4ca"/>
+      <rect x="0" y="290" width="980" height="22" rx="6" fill="${INK}"/>
+      ${wheel(150)}${wheel(280)}${wheel(820)}</svg>`, { position: "absolute", left: "460px", top: "470px" });
+    K(truck, [[34.0, { transform: "translateX(-1700px)" }], [34.55, { transform: "translateX(0px)" }, SNAP], [35.55, { transform: "translateX(30px)" }, IN], [36.0, { transform: "translateX(1900px)" }]]);
+    truck.querySelectorAll(".wh").forEach((w) => K(w, [[34.0, { transform: "rotate(0deg)" }, SNAP], [34.55, { transform: "rotate(1600deg)" }, LIN], [35.55, { transform: "rotate(1660deg)" }, IN], [36.0, { transform: "rotate(3400deg)" }]])); }
+
+  // ===== 16 · 36.0–39.05 · "So you stay" → camera pans to "focused." → zoom through the "o" =====
+  { const s = scene(36.0, 39.05);
+    boxField(s, 36.0, 39.0, 9, 53);
+    const zoom = el("div", null, s, null, { position: "absolute", inset: "0" });
+    const strip = el("div", null, zoom, null, { position: "absolute", left: "0", top: "0", width: "3840px", height: "1080px" });
+    headline(strip, "So you stay", 132, 960, 540, [36.0, 36.25, 36.5]);
+    const foc = el("div", "h", strip, `<span class="w">f</span><span class="w o">o</span><span class="w">cused.</span>`, { left: "2480px", top: "540px", transform: "translate(-50%,-50%)", fontSize: "300px", fontWeight: 600, color: ACC });
+    K(strip, [[37.0, { transform: "translateX(0px)" }, INOUT], [37.45, { transform: "translateX(-1520px)" }]]);
+    K(foc, [[37.3, { transform: "translate(-50%,-50%) scale(.85)", opacity: 0 }], [37.5, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }, SNAP]]);
+    const fill = el("div", null, s, null, { position: "absolute", inset: "0", background: INK });
+    K(fill, [[38.85, { opacity: 0 }, LIN], [39.02, { opacity: 1 }]]);
+    late.push(() => {
+      window.seek(38.0);
+      const r = foc.querySelector(".o").getBoundingClientRect(), sr = strip.getBoundingClientRect();
+      const ox = r.left + r.width / 2 - sr.left - 1520, oy = r.top + r.height * 0.6 - sr.top;
+      zoom.style.transformOrigin = `${ox}px ${oy}px`;
+      K(zoom, [[38.2, { transform: "scale(1)" }, "cubic-bezier(.7,0,.9,.3)"], [39.05, { transform: "scale(70)" }]]);
+    });
+    punch(37.5, 1.2); }
+
+  // ===== 17 · 39.0–43.0 · network map pulls out from Lahore =====
+  { const s = scene(39.0, 43.0, INK);
+    const W = 1640, H = W * map.h / map.w, X0 = (1920 - W) / 2, Y0 = 60, sc = W / map.w;
+    const [kx, ky] = map.ports.karachi, [lx, ly] = map.ports.lahore;
+    const ports = ["jebelAli", "dammam", "rotterdam", "felixstowe", "hamburg", "newYork", "houston", "toronto", "mombasa", "durban", "colombo", "portKlang", "sydney"];
+    const arc = ([x1, y1], [x2, y2]) => { const d = Math.hypot(x2 - x1, y2 - y1); return `M${x1},${y1} Q${(x1 + x2) / 2},${(y1 + y2) / 2 - d * 0.3} ${x2},${y2}`; };
+    const svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${map.w} ${map.h}">
+      ${map.dots.map(([x, y, pk]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="${pk ? BONE : "rgba(244,241,235,.2)"}"/>`).join("")}
+      <path d="M${lx},${ly} L${kx},${ky}" stroke="${BONE}" stroke-width="1.2" stroke-dasharray="2 3"/>
+      ${ports.map((p) => `<path class="rt" d="${arc([kx, ky], map.ports[p])}" fill="none" stroke="${ACC}" stroke-width="2" stroke-linecap="round" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>`).join("")}
+      ${ports.map((p) => `<circle class="pt" cx="${map.ports[p][0]}" cy="${map.ports[p][1]}" r="3.6" fill="${BONE}"/>`).join("")}
+      <circle cx="${kx}" cy="${ky}" r="3.6" fill="${ACC}"/>
+    </svg>`;
+    const mapEl = el("div", null, s, svg, { position: "absolute", left: X0 + "px", top: Y0 + "px", width: W + "px", height: H + "px", transformOrigin: `${lx * sc}px ${ly * sc}px` });
+    const dx = 960 - (X0 + lx * sc), dy = 500 - (Y0 + ly * sc);
+    K(mapEl, [[39.0, { transform: `translate(${dx}px,${dy}px) scale(9)` }], [40.5, { transform: "translate(0px,0px) scale(1)" }, INOUT], [42.7, { transform: "translate(0px,0px) scale(.97)" }, IN], [43.0, { transform: "translate(0px,-1000px) scale(.97)" }]]);
+    mapEl.querySelectorAll(".rt").forEach((r, i) => K(r, [[40.5 + i * 0.125, { strokeDashoffset: 1 }], [40.95 + i * 0.125, { strokeDashoffset: 0 }, SNAP]]));
+    mapEl.querySelectorAll(".pt").forEach((p, i) => K(p, [[40.9 + i * 0.125, { opacity: 0 }], [40.95 + i * 0.125, { opacity: 1 }]]));
+    const pin = el("div", null, mapEl, `<svg width="84" height="100" viewBox="0 0 84 100"><path d="M42 98 26 72H8a8 8 0 0 1-8-8V8a8 8 0 0 1 8-8h68a8 8 0 0 1 8 8v56a8 8 0 0 1-8 8H58z" fill="${BONE}"/><g transform="translate(14 6) scale(.875)"><path d="M8 17 20 7h38L46 17z" fill="${ACC}"/><path d="M8 21h48v9H17v18h39v9H8z" fill="${INK}"/></g></svg>`, { position: "absolute", left: lx * sc - 42 + "px", top: ly * sc - 100 + "px", transformOrigin: "50% 100%" });
+    K(pin, [[39.05, { transform: "scale(0)" }], [39.3, { transform: "scale(.12)" }, BOUNCE], [40.5, { transform: "scale(1)" }, INOUT]]);
+    const lab = el("div", "mono", s, "Lahore · HQ", { position: "absolute", left: X0 + lx * sc + 50 + "px", top: Y0 + ly * sc - 70 + "px", color: BONE, fontSize: "20px" });
+    K(lab, [[40.5, { opacity: 0 }], [40.7, { opacity: 1 }], [42.7, { opacity: 1 }], [42.8, { opacity: 0 }]]);
+    headline(s, "Join Pakistan’s <em>export packaging</em> network", 78, 960, 990, [41.0, 41.125, 41.25, 41.5, 41.75, 42.0], null, { color: BONE, ghost: "#3a3e45" }); }
+
+  // ===== 18 · 43.0–46.2 · call to action, click, burst =====
+  { const s = scene(43.0, 46.2);
+    const layer = el("div", null, s, null, { position: "absolute", inset: "0" });
+    K(layer, [[43.0, { transform: "translateY(1080px)" }], [43.3, { transform: "translateY(0px)" }, SNAP]]);
+    headline(layer, "Ready when you are.", 132, 960, 400, [43.25, 43.4, 43.55, 43.75]);
+    const buy = el("div", "btnx", layer, `Buy now <span style="font-size:48px">→</span>`, { left: "520px", top: "560px", background: ACC, color: "#fff" });
+    const sell = el("div", "btnx", layer, `Sell now <span style="font-size:48px">→</span>`, { left: "1010px", top: "560px", background: INK, color: "#fff" });
+    K(buy, [[43.75, { transform: "scale(.6)", opacity: 0 }], [43.95, { transform: "scale(1)", opacity: 1 }, BOUNCE], [44.98, { transform: "scale(1)" }], [45.05, { transform: "scale(.94)" }, LIN], [45.2, { transform: "scale(1)" }, EASE]]);
+    K(sell, [[44.0, { transform: "scale(.6)", opacity: 0 }], [44.2, { transform: "scale(1)", opacity: 1 }, BOUNCE], [45.2, { opacity: 1 }], [45.4, { opacity: 0 }]]);
+    const cursor = el("div", null, layer, `<svg width="54" height="64" viewBox="0 0 24 28"><path d="M2 2l18 11-8 1.5L16 24l-3.5 1.5-4-9.5L2 21z" fill="${INK}" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>`, { position: "absolute", left: "0", top: "0" });
+    K(cursor, [[44.25, { transform: "translate(1500px,1000px) scale(1)", opacity: 0 }], [44.3, { opacity: 1 }], [44.9, { transform: "translate(700px,620px) scale(1)" }, INOUT], [45.05, { transform: "translate(700px,620px) scale(.85)" }, LIN], [45.2, { transform: "translate(700px,620px) scale(1)", opacity: 1 }], [45.3, { opacity: 0 }]]);
+    const burst = el("div", null, s, null, { position: "absolute", left: "740px", top: "620px", width: "40px", height: "40px", borderRadius: "50%", background: ACC });
+    K(burst, [[45.25, { transform: "scale(0)" }], [46.0, { transform: "scale(110)" }, "cubic-bezier(.7,0,.84,0)"]]); }
+
+  // ===== 19 · 46.0–53.0 · end card =====
+  { const s = scene(46.0, 53.0, ACC);
+    const bg = el("div", null, s, null, { position: "absolute", inset: "0", background: INK });
+    K(bg, [[46.0, { clipPath: "inset(0 0 100% 0)" }], [46.35, { clipPath: "inset(0 0 0% 0)" }, SNAP]]);
+    const holder = el("div", null, s, markSVG(BONE, 190), { position: "absolute", left: "455px", top: "340px" });
+    buildMark(holder, 46.3);
+    wordmark(s, 680, 435, 132, BONE, 47.0, null);
+    const tag = el("div", "h", s, `Buy and sell cardboard <span style="color:${ACC}">effortlessly.</span>`, { left: "960px", top: "650px", transform: "translateX(-50%)", fontSize: "60px", color: BONE, letterSpacing: "-0.03em" });
+    K(tag, [[47.75, { opacity: 0, transform: "translate(-50%,24px)" }], [48.1, { opacity: 1, transform: "translate(-50%,0px)" }, SNAP]]);
+    const url = el("div", "mono", s, "cardboardpackage.com &nbsp;·&nbsp; Lahore, Pakistan", { position: "absolute", left: "960px", top: "780px", transform: "translateX(-50%)", fontSize: "26px", color: "#9a9da3", whiteSpace: "nowrap" });
+    K(url, [[48.5, { opacity: 0 }], [48.8, { opacity: 1 }]]);
+    const black = el("div", null, s, null, { position: "absolute", inset: "0", background: "#000" });
+    K(black, [[52.3, { opacity: 0 }, LIN], [53.0, { opacity: 1 }]]);
+    punch(46.5, 0.8); }
+
+  buildCamera();
+}
+
+const late = [];
+window.seek = (t) => { for (const a of document.getAnimations()) a.currentTime = Math.min(t, T - 0.001) * 1000; };
+window.__ready = (async () => {
+  await document.fonts.ready;
+  await Promise.all(["500 100px 'Inter Tight'", "600 100px 'Inter Tight'", "400 20px Inter", "500 20px Inter", "500 20px 'IBM Plex Mono'"].map((f) => document.fonts.load(f)));
+  const map = await (await fetch("/lib/worldDots.json")).json();
+  build(map);
+  late.forEach((f) => f());       // measurements that need laid-out text
+  if (new URLSearchParams(location.search).has("render")) document.getAnimations().forEach((a) => a.pause());
+  return true;
+})();
+</script>
+</body>
+</html>
